@@ -1,5 +1,5 @@
 # Ignore all files in the project directory
-plan.md
+Plan.md
 document.md
 context_log.json
 /venv
