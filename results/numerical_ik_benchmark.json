@@ -1,0 +1,7 @@
+{
+  "avg_solve_time_ms": 22.068440825969446,
+  "max_solve_time_ms": 30.186295000021346,
+  "success_rate_pct": 100.0,
+  "position_rmse_mm": 0.1357609249658267,
+  "n_samples": 500
+}

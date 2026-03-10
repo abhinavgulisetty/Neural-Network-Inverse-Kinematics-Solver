@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural IK Solver — 6-DOF Manipulator Dashboard</title>
+    <meta name="description" content="Neural Network-Based Inverse Kinematics Solver for 6-DOF Industrial Manipulator — Interactive Dashboard">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <div class="header-content">
+        <div class="header-left">
+            <div class="logo-icon">🤖</div>
+            <div>
+                <h1 class="header-title">Neural IK Solver</h1>
+                <p class="header-sub">6-DOF Industrial Manipulator • Deep Learning Inverse Kinematics</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-badge" id="statusBadge">
+                <span class="status-dot"></span>
+                <span id="statusText">Loading...</span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="main-content">
+
+    <!-- Section 1: Key Metric Cards -->
+    <section class="section" id="metricsSection">
+        <h2 class="section-title">📊 Key Performance Metrics</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">📍</div>
+                <div class="metric-label">Position RMSE</div>
+                <div class="metric-value" id="posRmse">—</div>
+                <div class="metric-unit">mm (target: &lt; 1.0)</div>
+                <div class="metric-bar"><div class="metric-bar-fill" id="posBar"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">🔄</div>
+                <div class="metric-label">Orientation RMSE</div>
+                <div class="metric-value" id="oriRmse">—</div>
+                <div class="metric-unit">deg (target: &lt; 0.5°)</div>
+                <div class="metric-bar"><div class="metric-bar-fill" id="oriBar"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">✅</div>
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value" id="successRate">—</div>
+                <div class="metric-unit">% (target: &gt; 95%)</div>
+                <div class="metric-bar"><div class="metric-bar-fill success" id="successBar"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">⚡</div>
+                <div class="metric-label">Avg Inference</div>
+                <div class="metric-value" id="inferenceTime">—</div>
+                <div class="metric-unit">ms (target: &lt; 1 ms)</div>
+                <div class="metric-bar"><div class="metric-bar-fill speed" id="inferBar"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">🚀</div>
+                <div class="metric-label">Speedup Factor</div>
+                <div class="metric-value" id="speedupFactor">—</div>
+                <div class="metric-unit">× vs numerical solver</div>
+                <div class="metric-bar"><div class="metric-bar-fill speedup" id="speedupBar"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">🏆</div>
+                <div class="metric-label">Best Iteration</div>
+                <div class="metric-value" id="bestIter">—</div>
+                <div class="metric-unit">out of 5 architectures</div>
+                <div class="metric-bar"><div class="metric-bar-fill iter" id="iterBar"></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: Training Progress -->
+    <section class="section" id="trainingSection">
+        <h2 class="section-title">📈 Training Progress</h2>
+        <div class="two-col">
+            <div class="glass-card">
+                <h3>Training & Validation Loss</h3>
+                <img id="lossPlot" class="plot-img" src="/static/plots/training_loss_curves.png" alt="Training Loss Curves" onerror="this.style.display='none'">
+            </div>
+            <div class="glass-card">
+                <h3>Iteration Comparison</h3>
+                <img id="iterPlot" class="plot-img" src="/static/plots/iteration_comparison.png" alt="Iteration Comparison" onerror="this.style.display='none'">
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Error Analysis -->
+    <section class="section" id="errorSection">
+        <h2 class="section-title">🔍 Error Analysis</h2>
+        <div class="three-col">
+            <div class="glass-card">
+                <h3>Position Error Distribution</h3>
+                <img class="plot-img" src="/static/plots/position_error_histogram.png" alt="Position Errors" onerror="this.style.display='none'">
+            </div>
+            <div class="glass-card">
+                <h3>Orientation Error Distribution</h3>
+                <img class="plot-img" src="/static/plots/orientation_error_histogram.png" alt="Orientation Errors" onerror="this.style.display='none'">
+            </div>
+            <div class="glass-card">
+                <h3>Per-Joint Error</h3>
+                <img class="plot-img" src="/static/plots/per_joint_error.png" alt="Per-Joint Error" onerror="this.style.display='none'">
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Live Prediction -->
+    <section class="section" id="predictionSection">
+        <h2 class="section-title">🎯 Live IK Prediction</h2>
+        <div class="prediction-layout">
+            <div class="glass-card prediction-controls">
+                <h3>Target End-Effector Pose</h3>
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>X (m)</label>
+                        <input type="range" id="inputX" min="-0.8" max="0.8" step="0.01" value="0.4">
+                        <span class="input-val" id="valX">0.40</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Y (m)</label>
+                        <input type="range" id="inputY" min="-0.8" max="0.8" step="0.01" value="0.0">
+                        <span class="input-val" id="valY">0.00</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Z (m)</label>
+                        <input type="range" id="inputZ" min="-0.5" max="1.0" step="0.01" value="0.6">
+                        <span class="input-val" id="valZ">0.60</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Roll (rad)</label>
+                        <input type="range" id="inputRoll" min="-3.14" max="3.14" step="0.01" value="0.0">
+                        <span class="input-val" id="valRoll">0.00</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Pitch (rad)</label>
+                        <input type="range" id="inputPitch" min="-3.14" max="3.14" step="0.01" value="3.14">
+                        <span class="input-val" id="valPitch">3.14</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Yaw (rad)</label>
+                        <input type="range" id="inputYaw" min="-3.14" max="3.14" step="0.01" value="0.0">
+                        <span class="input-val" id="valYaw">0.00</span>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="predict()">🎯 Predict IK</button>
+                    <button class="btn btn-secondary" onclick="randomDemo()">🎲 Random Pose</button>
+                </div>
+                <div class="prediction-result" id="predictionResult">
+                    <p>Click <strong>Predict IK</strong> or <strong>Random Pose</strong> to see results</p>
+                </div>
+            </div>
+            <div class="glass-card arm-viz">
+                <h3>3D Robot Arm Visualization</h3>
+                <div id="armPlot3D" style="width:100%;height:500px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: Trajectory Demo -->
+    <section class="section" id="trajectorySection">
+        <h2 class="section-title">🌀 Trajectory Following Demo</h2>
+        <div class="trajectory-layout">
+            <div class="glass-card traj-controls">
+                <h3>Trajectory Settings</h3>
+                <div class="traj-select">
+                    <label>Type:</label>
+                    <select id="trajType">
+                        <option value="circle">⭕ Circle</option>
+                        <option value="helix">🌀 Helix</option>
+                        <option value="line">📏 Line</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="runTrajectory()" id="trajBtn">▶ Run Trajectory</button>
+                <div id="trajStats" class="traj-stats">
+                    <p>Select a trajectory type and click Run</p>
+                </div>
+                <div class="traj-animations">
+                    <h4>Pre-generated Animations</h4>
+                    <img id="trajGif" class="plot-img" src="/static/plots/arm_animation_circle.gif" alt="Arm Animation" onerror="this.parentElement.style.display='none'">
+                </div>
+            </div>
+            <div class="glass-card traj-viz">
+                <h3>Live Trajectory Visualization</h3>
+                <div id="trajPlot3D" style="width:100%;height:500px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: NN vs Numerical -->
+    <section class="section" id="comparisonSection">
+        <h2 class="section-title">⚔️ Neural Network vs Numerical Solver</h2>
+        <div class="two-col">
+            <div class="glass-card">
+                <h3>Performance Comparison</h3>
+                <table class="comparison-table" id="comparisonTable">
+                    <thead>
+                        <tr><th>Metric</th><th>Neural Network</th><th>Numerical (LM)</th><th>Winner</th></tr>
+                    </thead>
+                    <tbody id="comparisonBody">
+                        <tr><td colspan="4" class="loading">Loading comparison data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="glass-card">
+                <h3>Inference Time Comparison</h3>
+                <img class="plot-img" src="/static/plots/inference_time_comparison.png" alt="Inference Time" onerror="this.style.display='none'">
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 7: Iteration Log -->
+    <section class="section" id="iterationSection">
+        <h2 class="section-title">🔬 Training Iteration Log</h2>
+        <div id="iterationCards" class="iteration-grid">
+            <div class="glass-card loading-card"><p>Loading iteration data...</p></div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+    <p>Neural Network-Based IK Solver • BCSE421L Robotics Project • Gulisetty Abhinav (23BRS1213) & Rudraksh Mertia (23BRS1263)</p>
+</footer>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "position_rmse_mm": 377.935022156556,
+  "position_mean_mm": 285.83986748426713,
+  "position_median_mm": 224.85480050787322,
+  "position_95th_mm": 750.5330430496831,
+  "position_max_mm": 1454.1021472997138,
+  "orientation_rmse_deg": 199.27060895324576,
+  "orientation_mean_deg": 175.2906945490211,
+  "orientation_median_deg": 159.6244720287333,
+  "orientation_95th_deg": 347.58571319138787,
+  "success_rate_pct": 0.0,
+  "avg_inference_ms": 0.29135656330618076,
+  "max_inference_ms": 0.4873430007137358,
+  "std_inference_ms": 0.01385637337588113,
+  "joint_rmse_deg": [
+    59.692069246127296,
+    60.89721009145704,
+    38.21270113571972,
+    158.43300598238594,
+    53.97956208436965,
+    158.24269401230862
+  ],
+  "n_evaluated": 5000,
+  "n_valid": 5000
+}
