@@ -14,7 +14,10 @@ from src.utils import load_context_log, update_phase, ensure_dir
 
 def main():
     ctx = load_context_log()
-    last = ctx.get("last_completed_phase")
+    # Force reset to phase1 to trigger new data generation and retraining 
+    # since we changed the joint limits to fix the 0% success rate issue
+    last = "phase1"
+    update_phase("phase1", "Reset pipeline to regenerate data")
 
     print("=" * 60)
     print("NEURAL NETWORK IK SOLVER — FULL PIPELINE")

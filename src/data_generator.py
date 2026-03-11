@@ -49,17 +49,17 @@ class DataGenerator:
         joint_angles = np.zeros((n_samples, 6))
         n_per_type = n_samples // 3
 
-        # Shoulder singularity: theta2 near 0 or ±pi
+        # Shoulder singularity: theta2 near 0 or ±pi. Restricted to [-90, 0] so only 0 is possible.
         for i in range(n_per_type):
             q = self.robot.random_joint_config()
-            q[1] = np.random.choice([0, np.pi, -np.pi]) + np.random.normal(0, 0.1)
+            q[1] = np.random.normal(0, 0.1)  # Only 0 is in our restricted range
             q = np.clip(q, self.robot.joint_limits_lower, self.robot.joint_limits_upper)
             joint_angles[i] = q
 
-        # Elbow singularity: theta3 near 0 or ±pi
+        # Elbow singularity: theta3 near 0 or ±pi. Restricted to [0, 90] so only 0 is possible.
         for i in range(n_per_type, 2 * n_per_type):
             q = self.robot.random_joint_config()
-            q[2] = np.random.choice([0, np.pi, -np.pi]) + np.random.normal(0, 0.1)
+            q[2] = np.random.normal(0, 0.1)  # Only 0 is in our restricted range
             q = np.clip(q, self.robot.joint_limits_lower, self.robot.joint_limits_upper)
             joint_angles[i] = q
 

@@ -16,12 +16,13 @@ class RobotModel:
         self.n_joints = 6
 
         # Joint limits (radians) — PUMA 560 standard limits
-        self.joint_limits_lower = np.array([-2.7925, -3.9270, -0.9425, -4.6426, -1.7453, -4.6426])
-        self.joint_limits_upper = np.array([2.7925, 0.7854, 3.0718, 4.6426, 1.7453, 4.6426])
+        self.joint_limits_lower_physical = np.array([-2.7925, -3.9270, -0.9425, -4.6426, -1.7453, -4.6426])
+        self.joint_limits_upper_physical = np.array([2.7925, 0.7854, 3.0718, 4.6426, 1.7453, 4.6426])
 
-        print(f"Robot: {self.robot.name}")
-        print(f"DOF: {self.n_joints}")
-        print(f"Joint limits (deg): {np.degrees(self.joint_limits_lower).round(1)} to {np.degrees(self.joint_limits_upper).round(1)}")
+        # RESTRICTED Limits to ensure 1-to-1 mapping (bijective IK)
+        # Prevents elbow-up/down ambiguity, backward reaching, and wrist flips
+        self.joint_limits_lower = np.radians([-90, -90,   0, -90, -90, -90])
+        self.joint_limits_upper = np.radians([ 90,   0,  90,  90,  90,  90])
 
     def forward_kinematics(self, joint_angles):
         """
@@ -126,7 +127,7 @@ class RobotModel:
         return np.array(positions)
 
     def random_joint_config(self, n=1):
-        """Generate random joint configurations within limits."""
+        """Generate random joint configurations within RESTRICTED limits."""
         configs = np.random.uniform(
             self.joint_limits_lower,
             self.joint_limits_upper,
@@ -135,7 +136,7 @@ class RobotModel:
         return configs if n > 1 else configs[0]
 
     def is_within_limits(self, joint_angles):
-        """Check if joint angles are within limits."""
+        """Check if joint angles are within RESTRICTED limits."""
         return np.all(joint_angles >= self.joint_limits_lower) and \
                np.all(joint_angles <= self.joint_limits_upper)
 
