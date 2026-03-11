@@ -5,7 +5,6 @@ Reads context_log.json to resume from last completed phase.
 import sys
 from pathlib import Path
 
-# Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -14,17 +13,14 @@ from src.utils import load_context_log, update_phase, ensure_dir
 
 def main():
     ctx = load_context_log()
-    # Force reset to phase1 to trigger new data generation and retraining 
-    # since we changed the joint limits to fix the 0% success rate issue
-    last = "phase1"
-    update_phase("phase1", "Reset pipeline to regenerate data")
+    last = "phase2"
+    update_phase("phase2", "Resume to train complex networks")
 
     print("=" * 60)
-    print("NEURAL NETWORK IK SOLVER — FULL PIPELINE")
+    print("NEURAL NETWORK IK SOLVER - FULL PIPELINE")
     print("=" * 60)
     print(f"Resuming from: {last or 'beginning'}\n")
 
-    # Phase 1: Verify robot model
     if not last or last < "phase1":
         print("\n" + "=" * 60)
         print("PHASE 1: Robot Model Verification")
@@ -33,7 +29,6 @@ def main():
         verify_robot_model()
         update_phase("phase1", "Robot model verified")
 
-    # Phase 2: Data generation
     if not last or last < "phase2":
         print("\n" + "=" * 60)
         print("PHASE 2: Data Generation")
@@ -41,15 +36,13 @@ def main():
         from src.data_generator import generate_all_data
         generate_all_data()
 
-    # Phase 3: Iterative training
     if not last or last < "phase3":
         print("\n" + "=" * 60)
         print("PHASE 3: Iterative Training")
         print("=" * 60)
         from src.train import run_training_iterations
-        run_training_iterations(max_iterations=3)
+        run_training_iterations(max_iterations=5)
 
-    # Phase 4: Full evaluation + numerical benchmark
     if not last or last < "phase4":
         print("\n" + "=" * 60)
         print("PHASE 4: Full Evaluation")
@@ -61,7 +54,6 @@ def main():
         compile_all_metrics(results_dir)
         update_phase("phase4", "Full evaluation complete")
 
-    # Phase 5: Visualizations
     if not last or last < "phase5":
         print("\n" + "=" * 60)
         print("PHASE 5: Generating Visualizations")
@@ -69,7 +61,6 @@ def main():
         from src.visualization import generate_all_visualizations
         generate_all_visualizations()
 
-        # Generate arm animations for demo trajectories
         try:
             from src.trajectory import get_trajectory
             from src.ik_solver import IKSolver
@@ -87,12 +78,12 @@ def main():
                 save_path = plots_dir / f'arm_animation_{traj_type}.gif'
                 generate_arm_animation(joint_traj, save_path, title=f'{traj_type.capitalize()} Trajectory')
         except Exception as e:
-            print(f"  ⚠️ Animation generation failed: {e}")
+            print(f"  Animation generation failed: {e}")
 
         update_phase("phase5", "Visualizations generated")
 
     print("\n" + "=" * 60)
-    print("✅ PIPELINE COMPLETE!")
+    print("PIPELINE COMPLETE!")
     print("=" * 60)
     print("\nTo launch the web dashboard:")
     print(f"  cd '{project_root}'")

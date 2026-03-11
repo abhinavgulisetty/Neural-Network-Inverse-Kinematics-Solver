@@ -7,6 +7,24 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSliders();
     initArm3D();
     initTrajPlot();
+
+    // Modal Logic
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const closeBtn = document.querySelector('.close-modal');
+
+    document.querySelectorAll('.plot-img').forEach(img => {
+        img.addEventListener('click', function() {
+            modal.style.display = "block";
+            modalImg.src = this.src;
+        });
+    });
+
+    closeBtn.addEventListener('click', () => modal.style.display = "none");
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.style.display = "none";
+    });
+
 });
 
 // ===== API Helpers =====
@@ -30,21 +48,18 @@ async function loadMetrics() {
         if (bestMetrics) {
             animateValue('posRmse', bestMetrics.position_rmse_mm, 4);
             animateValue('oriRmse', bestMetrics.orientation_rmse_deg, 4);
-            animateValue('successRate', bestMetrics.success_rate_pct, 1);
             animateValue('inferenceTime', bestMetrics.avg_inference_ms, 4);
             document.getElementById('bestIter').textContent = best;
 
             // Bars
             setBar('posBar', Math.min(100, (1 / Math.max(bestMetrics.position_rmse_mm, 0.01)) * 100));
             setBar('oriBar', Math.min(100, (0.5 / Math.max(bestMetrics.orientation_rmse_deg, 0.01)) * 100));
-            setBar('successBar', bestMetrics.success_rate_pct);
             setBar('inferBar', Math.min(100, (1 / Math.max(bestMetrics.avg_inference_ms, 0.001)) * 100));
             setBar('iterBar', (best / 5) * 100);
 
             // Color code metrics
             colorMetric('posRmse', bestMetrics.position_rmse_mm <= 1.0);
             colorMetric('oriRmse', bestMetrics.orientation_rmse_deg <= 0.5);
-            colorMetric('successRate', bestMetrics.success_rate_pct >= 95);
             colorMetric('inferenceTime', bestMetrics.avg_inference_ms <= 1.0);
         }
 
@@ -106,8 +121,7 @@ function setStatus(text, ok) {
 function buildComparisonTable(nn, num, bestIter) {
     const rows = [
         ['Avg Solve Time', `${nn.avg_inference_ms.toFixed(4)} ms`, `${num.avg_solve_time_ms.toFixed(2)} ms`, nn.avg_inference_ms < num.avg_solve_time_ms ? 'nn' : 'num'],
-        ['Position RMSE', `${nn.position_rmse_mm.toFixed(4)} mm`, `${num.position_rmse_mm.toFixed(4)} mm`, nn.position_rmse_mm < num.position_rmse_mm ? 'nn' : 'num'],
-        ['Success Rate', `${nn.success_rate_pct.toFixed(1)}%`, `${num.success_rate_pct.toFixed(1)}%`, nn.success_rate_pct > num.success_rate_pct ? 'nn' : 'num'],
+        ['Position RMSE', `${nn.position_rmse_mm.toFixed(4)} mm`, `${num.position_rmse_mm.toFixed(4)} mm`, nn.position_rmse_mm < num.position_rmse_mm ? 'nn' : 'num']
     ];
     const body = document.getElementById('comparisonBody');
     body.innerHTML = rows.map(([metric, nnVal, numVal, winner]) =>
@@ -115,7 +129,7 @@ function buildComparisonTable(nn, num, bestIter) {
             <td>${metric}</td>
             <td class="${winner === 'nn' ? 'winner-nn' : ''}">${nnVal}</td>
             <td class="${winner === 'num' ? 'winner-num' : ''}">${numVal}</td>
-            <td class="${winner === 'nn' ? 'winner-nn' : 'winner-num'}">${winner === 'nn' ? '🤖 NN' : '📐 Numerical'}</td>
+            <td class="${winner === 'nn' ? 'winner-nn' : 'winner-num'}">${winner === 'nn' ? 'NN' : 'Numerical'}</td>
         </tr>`
     ).join('');
 }
@@ -145,12 +159,10 @@ async function loadIterations() {
                         <span class="iter-metric-val">${(m.position_rmse_mm || 0).toFixed(3)} mm</span>
                         <span class="iter-metric-label">Ori RMSE:</span>
                         <span class="iter-metric-val">${(m.orientation_rmse_deg || 0).toFixed(3)}°</span>
-                        <span class="iter-metric-label">Success:</span>
-                        <span class="iter-metric-val">${(m.success_rate_pct || 0).toFixed(1)}%</span>
                         <span class="iter-metric-label">Inference:</span>
                         <span class="iter-metric-val">${(m.avg_inference_ms || 0).toFixed(4)} ms</span>
                     </div>
-                    <div class="iter-changes">⚡ ${it.changes_made || 'No notes'}</div>
+                    <div class="iter-changes">${it.changes_made || 'No notes'}</div>
                 </div>`;
         }).join('');
     } catch (e) {
@@ -252,7 +264,7 @@ async function predict() {
     const yaw = document.getElementById('inputYaw').value;
 
     const resultDiv = document.getElementById('predictionResult');
-    resultDiv.innerHTML = '<p style="color:#00d4ff">⏳ Computing...</p>';
+    resultDiv.innerHTML = '<p style="color:#00d4ff">Computing...</p>';
 
     try {
         const data = await fetchJSON(`/api/predict?x=${x}&y=${y}&z=${z}&roll=${roll}&pitch=${pitch}&yaw=${yaw}`);
@@ -282,7 +294,7 @@ async function predict() {
 
 async function randomDemo() {
     const resultDiv = document.getElementById('predictionResult');
-    resultDiv.innerHTML = '<p style="color:#00d4ff">⏳ Generating random pose...</p>';
+    resultDiv.innerHTML = '<p style="color:#00d4ff">Generating random pose...</p>';
 
     try {
         const data = await fetchJSON('/api/random-demo');
@@ -344,7 +356,7 @@ async function runTrajectory() {
     const statsDiv = document.getElementById('trajStats');
 
     btn.disabled = true;
-    btn.textContent = '⏳ Computing...';
+    btn.textContent = 'Computing...';
     statsDiv.innerHTML = '<p style="color:#00d4ff">Running trajectory IK...</p>';
 
     // Update GIF

@@ -69,7 +69,6 @@ def plot_error_histograms(results_dir, output_dir):
     output_dir = Path(output_dir)
     ensure_dir(output_dir)
 
-    # Find best iteration
     metrics_path = results_dir / "metrics.json"
     if metrics_path.exists():
         with open(metrics_path) as f:
@@ -87,11 +86,9 @@ def plot_error_histograms(results_dir, output_dir):
     pos_errors = data['position_errors_mm']
     ori_errors = data['orientation_errors_deg']
 
-    # Filter valid
     pos_valid = pos_errors[np.isfinite(pos_errors)]
     ori_valid = ori_errors[np.isfinite(ori_errors)]
 
-    # Position error histogram
     fig, ax = plt.subplots(figsize=(8, 5))
     fig.patch.set_facecolor('#0a0a0f')
     ax.set_facecolor('#12121a')
@@ -111,14 +108,13 @@ def plot_error_histograms(results_dir, output_dir):
                 facecolor='#0a0a0f', bbox_inches='tight')
     plt.close()
 
-    # Orientation error histogram
     fig, ax = plt.subplots(figsize=(8, 5))
     fig.patch.set_facecolor('#0a0a0f')
     ax.set_facecolor('#12121a')
     ax.hist(ori_valid, bins=100, color='#8b5cf6', alpha=0.75, edgecolor='none')
-    ax.axvline(0.5, color='#ef4444', linestyle='--', linewidth=2, label='Target: 0.5°')
+    ax.axvline(0.5, color='#ef4444', linestyle='--', linewidth=2, label='Target: 0.5 deg')
     ax.axvline(np.mean(ori_valid), color='#22c55e', linestyle='--', linewidth=2,
-               label=f'Mean: {np.mean(ori_valid):.2f}°')
+               label=f'Mean: {np.mean(ori_valid):.2f} deg')
     ax.set_xlabel('Orientation Error (degrees)', color='white')
     ax.set_ylabel('Count', color='white')
     ax.set_title(f'Orientation Error Distribution (Iter {best_iter})', color='white')
@@ -203,9 +199,8 @@ def plot_iteration_comparison(results_dir, output_dir):
     iter_nums = [it['iteration'] for it in iters]
     pos_rmse = [it['position_rmse_mm'] for it in iters]
     ori_rmse = [it['orientation_rmse_deg'] for it in iters]
-    success = [it['success_rate_pct'] for it in iters]
 
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.patch.set_facecolor('#0a0a0f')
 
     colors = ['#00d4ff', '#8b5cf6', '#f97316', '#22c55e', '#ef4444']
@@ -228,13 +223,8 @@ def plot_iteration_comparison(results_dir, output_dir):
 
     axes[1].bar([f'Iter {n}' for n in iter_nums], ori_rmse, color=bar_colors, alpha=0.8)
     axes[1].axhline(0.5, color='#ef4444', linestyle='--', label='Target')
-    axes[1].set_title('Orientation RMSE (°)')
+    axes[1].set_title('Orientation RMSE (deg)')
     axes[1].legend(facecolor='#1a1a2e', edgecolor='#333', labelcolor='white')
-
-    axes[2].bar([f'Iter {n}' for n in iter_nums], success, color=bar_colors, alpha=0.8)
-    axes[2].axhline(95, color='#22c55e', linestyle='--', label='Target')
-    axes[2].set_title('Success Rate (%)')
-    axes[2].legend(facecolor='#1a1a2e', edgecolor='#333', labelcolor='white')
 
     plt.tight_layout()
     plt.savefig(output_dir / 'iteration_comparison.png', dpi=150,
@@ -281,13 +271,12 @@ def plot_inference_comparison(results_dir, output_dir):
     for spine in ax.spines.values():
         spine.set_color('#333')
 
-    # Add value labels
     for bar, val in zip(bars, times):
         ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 0.1,
                 f'{val:.3f} ms', ha='center', color='white', fontweight='bold')
 
     speedup = times[0] / times[1] if times[1] > 0 else 0
-    ax.text(0.5, 0.85, f'Speedup: {speedup:.0f}×',
+    ax.text(0.5, 0.85, f'Speedup: {speedup:.0f}x',
             transform=ax.transAxes, ha='center', color='#22c55e',
             fontsize=16, fontweight='bold')
 
@@ -307,14 +296,11 @@ def plot_arm_3d(joint_angles, title="Robot Arm", save_path=None):
     ax = fig.add_subplot(111, projection='3d')
     ax.set_facecolor('#12121a')
 
-    # Plot links
     ax.plot(link_pos[:, 0], link_pos[:, 1], link_pos[:, 2],
             'o-', color='#00d4ff', linewidth=3, markersize=8, markerfacecolor='#8b5cf6')
 
-    # End effector
     ax.scatter(*link_pos[-1], color='#ef4444', s=100, zorder=5, label='End Effector')
 
-    # Base
     ax.scatter(*link_pos[0], color='#22c55e', s=100, zorder=5, marker='^', label='Base')
 
     ax.set_xlabel('X (m)', color='white')
@@ -342,7 +328,6 @@ def generate_arm_animation(joint_trajectory, save_path, title="Arm Trajectory"):
     robot = RobotModel()
     n_frames = len(joint_trajectory)
 
-    # Precompute all link positions
     all_positions = []
     for q in joint_trajectory:
         try:
@@ -350,7 +335,6 @@ def generate_arm_animation(joint_trajectory, save_path, title="Arm Trajectory"):
         except Exception:
             all_positions.append(all_positions[-1] if all_positions else np.zeros((7, 3)))
 
-    # Compute axis limits
     all_pos_arr = np.array(all_positions)
     margin = 0.1
     xlim = [all_pos_arr[:, :, 0].min() - margin, all_pos_arr[:, :, 0].max() + margin]
@@ -366,11 +350,9 @@ def generate_arm_animation(joint_trajectory, save_path, title="Arm Trajectory"):
         ax.set_facecolor('#12121a')
         pos = all_positions[frame]
 
-        # Draw links
         ax.plot(pos[:, 0], pos[:, 1], pos[:, 2],
                 'o-', color='#00d4ff', linewidth=3, markersize=8, markerfacecolor='#8b5cf6')
 
-        # End effector trace (up to current frame)
         ee_trace = np.array([all_positions[i][-1] for i in range(frame + 1)])
         ax.plot(ee_trace[:, 0], ee_trace[:, 1], ee_trace[:, 2],
                 '-', color='#f97316', alpha=0.5, linewidth=1)
@@ -387,7 +369,6 @@ def generate_arm_animation(joint_trajectory, save_path, title="Arm Trajectory"):
         ax.set_title(f'{title} (frame {frame+1}/{n_frames})', color='white')
         ax.tick_params(colors='white')
 
-    # Use every Nth frame to keep GIF manageable
     step = max(1, n_frames // 50)
     frames = list(range(0, n_frames, step))
 
@@ -423,7 +404,7 @@ def generate_all_visualizations(results_dir=None, output_dir=None):
     print("  Inference comparison...")
     plot_inference_comparison(results_dir, output_dir)
 
-    print("  ✅ All visualizations generated!")
+    print("  All visualizations generated!")
 
 
 if __name__ == "__main__":

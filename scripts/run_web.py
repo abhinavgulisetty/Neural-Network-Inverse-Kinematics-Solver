@@ -11,7 +11,7 @@ from web.app import app
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("Neural IK Solver — Web Dashboard")
+    print("Neural IK Solver - Web Dashboard")
     print("=" * 60)
     print("Open http://localhost:5000 in your browser\n")
     app.run(host='0.0.0.0', port=5000, debug=True)

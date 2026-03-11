@@ -7,7 +7,7 @@ import torch.nn as nn
 
 
 class IKNetV1(nn.Module):
-    """Iteration 1: Baseline MLP — 4 hidden layers, 256 neurons."""
+    """Iteration 1: Baseline MLP with 4 hidden layers, 256 neurons."""
 
     def __init__(self):
         super().__init__()
@@ -32,7 +32,7 @@ class IKNetV1(nn.Module):
 
 
 class IKNetV2(nn.Module):
-    """Iteration 2: Deeper + BatchNorm — 5 layers, wider, with batch normalization."""
+    """Iteration 2: Deeper network with BatchNorm, 5 layers, wider, with batch normalization."""
 
     def __init__(self):
         super().__init__()
@@ -134,12 +134,11 @@ class IKNetV4(nn.Module):
             nn.BatchNorm1d(256),
             nn.ReLU(),
 
-            nn.Linear(256, 12)  # sin/cos for 6 joints
+            nn.Linear(256, 12)
         )
 
     def forward(self, x):
         out = self.backbone(x)
-        # Output: [sin(θ1), cos(θ1), sin(θ2), cos(θ2), ..., sin(θ6), cos(θ6)]
         return out
 
     def predict_angles(self, x):
@@ -154,11 +153,10 @@ class IKNetV4(nn.Module):
 
 
 class IKNetV5(nn.Module):
-    """Iteration 5: Multi-head — separate heads for position joints (1-3) and wrist joints (4-6)."""
+    """Iteration 5: Multi-head with separate heads for position joints (1-3) and wrist joints (4-6)."""
 
     def __init__(self):
         super().__init__()
-        # Shared backbone
         self.backbone = nn.Sequential(
             nn.Linear(6, 512),
             nn.BatchNorm1d(512),
@@ -169,7 +167,6 @@ class IKNetV5(nn.Module):
             nn.ReLU(),
         )
 
-        # Position head (joints 1-3: mainly control arm position)
         self.pos_head = nn.Sequential(
             nn.Linear(256, 128),
             nn.BatchNorm1d(128),
@@ -180,7 +177,6 @@ class IKNetV5(nn.Module):
             nn.Linear(64, 3)
         )
 
-        # Orientation head (joints 4-6: mainly control wrist orientation)
         self.ori_head = nn.Sequential(
             nn.Linear(256, 128),
             nn.BatchNorm1d(128),
@@ -198,13 +194,12 @@ class IKNetV5(nn.Module):
         return torch.cat([pos_joints, ori_joints], dim=1)
 
 
-# Registry for easy iteration
 MODEL_REGISTRY = {
-    1: ("IKNetV1 — Baseline MLP (4×256)", IKNetV1),
-    2: ("IKNetV2 — Deeper + BatchNorm (512→128)", IKNetV2),
-    3: ("IKNetV3 — Residual Connections", IKNetV3),
-    4: ("IKNetV4 — Sin/Cos Output Encoding", IKNetV4),
-    5: ("IKNetV5 — Multi-Head (Position + Orientation)", IKNetV5),
+    1: ("IKNetV1 - Baseline MLP (4x256)", IKNetV1),
+    2: ("IKNetV2 - Deeper + BatchNorm (512 to 128)", IKNetV2),
+    3: ("IKNetV3 - Residual Connections", IKNetV3),
+    4: ("IKNetV4 - Sin/Cos Output Encoding", IKNetV4),
+    5: ("IKNetV5 - Multi-Head (Position + Orientation)", IKNetV5),
 }
 
 

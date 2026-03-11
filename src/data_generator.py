@@ -34,7 +34,6 @@ class DataGenerator:
             except Exception:
                 valid_mask[i] = False
 
-        # Filter valid samples
         joint_angles = joint_angles[valid_mask]
         poses = poses[valid_mask]
         print(f"Valid samples: {len(joint_angles)}/{n_samples}")
@@ -49,21 +48,18 @@ class DataGenerator:
         joint_angles = np.zeros((n_samples, 6))
         n_per_type = n_samples // 3
 
-        # Shoulder singularity: theta2 near 0 or ±pi. Restricted to [-90, 0] so only 0 is possible.
         for i in range(n_per_type):
             q = self.robot.random_joint_config()
-            q[1] = np.random.normal(0, 0.1)  # Only 0 is in our restricted range
+            q[1] = np.random.normal(0, 0.1)
             q = np.clip(q, self.robot.joint_limits_lower, self.robot.joint_limits_upper)
             joint_angles[i] = q
 
-        # Elbow singularity: theta3 near 0 or ±pi. Restricted to [0, 90] so only 0 is possible.
         for i in range(n_per_type, 2 * n_per_type):
             q = self.robot.random_joint_config()
-            q[2] = np.random.normal(0, 0.1)  # Only 0 is in our restricted range
+            q[2] = np.random.normal(0, 0.1)
             q = np.clip(q, self.robot.joint_limits_lower, self.robot.joint_limits_upper)
             joint_angles[i] = q
 
-        # Wrist singularity: theta5 near 0
         for i in range(2 * n_per_type, n_samples):
             q = self.robot.random_joint_config()
             q[4] = np.random.normal(0, 0.1)
@@ -96,15 +92,12 @@ class DataGenerator:
 
         for i in range(n_samples):
             q = self.robot.random_joint_config()
-            # For 2-3 random joints, push near a limit
             n_boundary_joints = np.random.randint(2, 4)
             boundary_joints = np.random.choice(6, n_boundary_joints, replace=False)
             for j in boundary_joints:
                 if np.random.random() > 0.5:
-                    # Near upper limit
                     q[j] = self.robot.joint_limits_upper[j] - np.abs(np.random.normal(0, 0.1 * limits_range[j]))
                 else:
-                    # Near lower limit
                     q[j] = self.robot.joint_limits_lower[j] + np.abs(np.random.normal(0, 0.1 * limits_range[j]))
             q = np.clip(q, self.robot.joint_limits_lower, self.robot.joint_limits_upper)
             joint_angles[i] = q
@@ -145,17 +138,14 @@ class DataGenerator:
         joints = np.concatenate(all_joints, axis=0)
         print(f"  Total combined: {len(poses)} samples")
 
-        # Shuffle
         indices = np.random.permutation(len(poses))
         poses = poses[indices]
         joints = joints[indices]
 
-        # Normalize
         normalizer = Normalizer()
         normalizer.fit(poses, joints)
         normalizer.save(str(self.data_dir / "normalization_params.npz"))
 
-        # Split: 70/15/15
         n = len(poses)
         n_train = int(0.70 * n)
         n_val = int(0.15 * n)
@@ -170,10 +160,8 @@ class DataGenerator:
             np.savez(self.data_dir / f"{split_name}.npz", poses=p, joint_angles=j)
             print(f"  {split_name}: {len(p)} samples")
 
-        # Save combined
         np.savez(self.data_dir / "dataset_combined.npz", poses=poses, joint_angles=joints)
 
-        # Log stats
         stats = {
             "total_samples": int(n),
             "train_samples": int(n_train),
@@ -193,7 +181,7 @@ class DataGenerator:
             }
         }
         log_dataset_stats(stats)
-        print("  ✅ Dataset preprocessing complete!")
+        print("  Dataset preprocessing complete!")
         return stats
 
 

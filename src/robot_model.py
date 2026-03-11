@@ -11,16 +11,13 @@ class RobotModel:
     """PUMA 560 6-DOF Industrial Manipulator."""
 
     def __init__(self):
-        """Initialize PUMA 560 using roboticstoolbox's built-in model."""
+        """Initialize PUMA 560 using roboticstoolbox built-in model."""
         self.robot = rtb.models.DH.Puma560()
         self.n_joints = 6
 
-        # Joint limits (radians) — PUMA 560 standard limits
         self.joint_limits_lower_physical = np.array([-2.7925, -3.9270, -0.9425, -4.6426, -1.7453, -4.6426])
         self.joint_limits_upper_physical = np.array([2.7925, 0.7854, 3.0718, 4.6426, 1.7453, 4.6426])
 
-        # RESTRICTED Limits to ensure 1-to-1 mapping (bijective IK)
-        # Prevents elbow-up/down ambiguity, backward reaching, and wrist flips
         self.joint_limits_lower = np.radians([-90, -90,   0, -90, -90, -90])
         self.joint_limits_upper = np.radians([ 90,   0,  90,  90,  90,  90])
 
@@ -37,11 +34,8 @@ class RobotModel:
         q = np.asarray(joint_angles, dtype=np.float64)
         T = self.robot.fkine(q)
 
-        # Extract position
-        pos = T.t  # [x, y, z] in meters
-
-        # Extract orientation as Euler ZYX (roll, pitch, yaw)
-        rpy = T.rpy(order='zyx')  # [roll, pitch, yaw] in radians
+        pos = T.t
+        rpy = T.rpy(order='zyx')
 
         return np.concatenate([pos, rpy])
 
@@ -79,7 +73,6 @@ class RobotModel:
         pos = target_pose[:3]
         rpy = target_pose[3:]
 
-        # Build target SE3
         T_target = SE3.Rt(SE3.RPY(rpy, order='zyx').R, pos)
 
         if q0 is None:
@@ -102,32 +95,28 @@ class RobotModel:
             joint_angles: (6,) array of joint angles
 
         Returns:
-            positions: (7, 3) array — base + 6 joint positions
+            positions: (7, 3) array with base + 6 joint positions
         """
         q = np.asarray(joint_angles, dtype=np.float64)
-        positions = [np.array([0, 0, 0])]  # Base
+        positions = [np.array([0, 0, 0])]
 
-        # Compute cumulative FK through each link
         for i in range(self.n_joints):
-            # fkine_all returns all intermediate transforms
             try:
                 T = self.robot.A(i, q)
                 for j in range(i):
                     pass
-                # Build the chain up to link i
                 from functools import reduce
                 Ts = [self.robot.links[j].A(q[j]) for j in range(i + 1)]
                 T_cumulative = reduce(lambda a, b: a * b, Ts)
                 positions.append(T_cumulative.t.copy())
             except Exception:
-                # Fallback: use end-effector for all
                 T = self.robot.fkine(q)
                 positions.append(T.t.copy())
 
         return np.array(positions)
 
     def random_joint_config(self, n=1):
-        """Generate random joint configurations within RESTRICTED limits."""
+        """Generate random joint configurations within restricted limits."""
         configs = np.random.uniform(
             self.joint_limits_lower,
             self.joint_limits_upper,
@@ -136,7 +125,7 @@ class RobotModel:
         return configs if n > 1 else configs[0]
 
     def is_within_limits(self, joint_angles):
-        """Check if joint angles are within RESTRICTED limits."""
+        """Check if joint angles are within restricted limits."""
         return np.all(joint_angles >= self.joint_limits_lower) and \
                np.all(joint_angles <= self.joint_limits_upper)
 
@@ -149,7 +138,6 @@ def verify_robot_model():
 
     robot = RobotModel()
 
-    # Test 1: Home position FK
     print("\n--- Test 1: Home Position ---")
     home_q = np.zeros(6)
     home_pose = robot.forward_kinematics(home_q)
@@ -157,7 +145,6 @@ def verify_robot_model():
     print(f"End-effector position: {home_pose[:3].round(4)} m")
     print(f"End-effector orientation: {np.degrees(home_pose[3:]).round(2)} deg")
 
-    # Test 2: Random config FK
     print("\n--- Test 2: Random Configuration ---")
     rand_q = robot.random_joint_config()
     rand_pose = robot.forward_kinematics(rand_q)
@@ -165,23 +152,21 @@ def verify_robot_model():
     print(f"End-effector position: {rand_pose[:3].round(4)} m")
     print(f"End-effector orientation: {np.degrees(rand_pose[3:]).round(2)} deg")
 
-    # Test 3: FK → IK → FK round-trip
-    print("\n--- Test 3: FK → IK → FK Round-Trip ---")
+    print("\n--- Test 3: FK to IK to FK Round-Trip ---")
     test_q = np.array([0.5, -0.3, 0.8, 0.0, 0.5, 0.2])
     pose = robot.forward_kinematics(test_q)
     q_ik, success, solve_time = robot.numerical_ik(pose, q0=test_q + 0.01)
     if success:
         pose_recovered = robot.forward_kinematics(q_ik)
-        pos_error = np.linalg.norm(pose[:3] - pose_recovered[:3]) * 1000  # mm
+        pos_error = np.linalg.norm(pose[:3] - pose_recovered[:3]) * 1000
         print(f"Original pose: {pose[:3].round(4)} m")
         print(f"Recovered pose: {pose_recovered[:3].round(4)} m")
         print(f"Position error: {pos_error:.4f} mm")
         print(f"IK solve time: {solve_time:.2f} ms")
-        print(f"✅ Round-trip successful!" if pos_error < 1.0 else f"⚠️ Position error > 1mm")
+        print("Round-trip successful!" if pos_error < 1.0 else "Position error > 1mm")
     else:
-        print("❌ IK failed!")
+        print("IK failed!")
 
-    # Test 4: Link positions for visualization
     print("\n--- Test 4: Link Positions ---")
     link_pos = robot.get_link_positions(home_q)
     print(f"Number of link positions: {len(link_pos)}")
@@ -189,7 +174,7 @@ def verify_robot_model():
         label = "Base" if i == 0 else f"Joint {i}"
         print(f"  {label}: [{p[0]:.4f}, {p[1]:.4f}, {p[2]:.4f}] m")
 
-    print("\n✅ Robot model verification complete!")
+    print("\nRobot model verification complete!")
     return robot
 
 

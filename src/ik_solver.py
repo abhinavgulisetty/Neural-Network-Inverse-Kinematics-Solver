@@ -1,5 +1,5 @@
 """
-Production IK Solver wrapper — clean API for the web app.
+Production IK Solver wrapper -- clean API for the web app.
 """
 import time
 import numpy as np
@@ -28,7 +28,6 @@ class IKSolver:
         self.robot = RobotModel()
         self.device = torch.device('cpu')
 
-        # Determine which model to load
         if model_path is None or iteration is None:
             ctx = load_context_log()
             best = ctx.get("best_model", {})
@@ -40,13 +39,11 @@ class IKSolver:
         self.iteration = iteration
         self.is_sincos = (iteration == 4)
 
-        # Load model
         self.model, _ = create_model(iteration)
         checkpoint = torch.load(model_path, map_location='cpu', weights_only=False)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.model.eval()
 
-        # Load normalizer
         self.normalizer = Normalizer()
         self.normalizer.load(str(self.project_root / "data" / "normalization_params.npz"))
 
@@ -64,11 +61,9 @@ class IKSolver:
         """
         target_pose = np.asarray(target_pose, dtype=np.float32)
 
-        # Normalize
         pose_norm = self.normalizer.normalize_input(target_pose.reshape(1, -1))
         x = torch.from_numpy(pose_norm.astype(np.float32)).to(self.device)
 
-        # Predict
         start = time.perf_counter()
         with torch.no_grad():
             if self.is_sincos:
@@ -82,10 +77,8 @@ class IKSolver:
 
         inference_ms = (time.perf_counter() - start) * 1000
 
-        # Denormalize
         joint_angles = self.normalizer.denormalize_output(pred_norm)[0]
 
-        # Verify via FK
         try:
             achieved_pose = self.robot.forward_kinematics(joint_angles)
             pos_error_mm = np.linalg.norm(achieved_pose[:3] - target_pose[:3]) * 1000

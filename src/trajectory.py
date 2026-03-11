@@ -23,7 +23,7 @@ def generate_circular_trajectory(center=None, radius=0.1, n_points=100, plane='x
         waypoints: (n_points, 6) array of [x, y, z, roll, pitch, yaw]
     """
     if center is None:
-        center = [0.4, 0.0, 0.4]  # Reasonable PUMA 560 workspace point
+        center = [0.4, 0.0, 0.4]
 
     t = np.linspace(0, 2 * np.pi, n_points, endpoint=False)
     waypoints = np.zeros((n_points, 6))
@@ -42,16 +42,13 @@ def generate_circular_trajectory(center=None, radius=0.1, n_points=100, plane='x
             waypoints[i, 1] = center[1] + radius * np.cos(t[i])
             waypoints[i, 2] = center[2] + radius * np.sin(t[i])
 
-        # Keep constant orientation (pointing down)
         waypoints[i, 3:] = [0.0, np.pi, 0.0]
 
     return waypoints
 
 
 def generate_helical_trajectory(center=None, radius=0.1, height=0.2, n_points=100):
-    """
-    Generate a helical trajectory.
-    """
+    """Generate a helical trajectory."""
     if center is None:
         center = [0.4, 0.0, 0.3]
 
@@ -68,9 +65,7 @@ def generate_helical_trajectory(center=None, radius=0.1, height=0.2, n_points=10
 
 
 def generate_linear_trajectory(start=None, end=None, n_points=100):
-    """
-    Generate a straight-line trajectory.
-    """
+    """Generate a straight-line trajectory."""
     if start is None:
         start = np.array([0.3, -0.2, 0.3, 0.0, np.pi, 0.0])
     if end is None:

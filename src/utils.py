@@ -57,14 +57,12 @@ def log_iteration(iteration_num, architecture, hyperparams, metrics, changes, ne
         "changes_made": changes,
         "next_steps": next_steps
     }
-    # Update or append
     existing = [i for i, it in enumerate(ctx["iterations"]) if it["iteration"] == iteration_num]
     if existing:
         ctx["iterations"][existing[0]] = entry
     else:
         ctx["iterations"].append(entry)
 
-    # Update best model
     if metrics.get("position_rmse_mm") is not None:
         best_pos = ctx["best_model"].get("metrics", {}).get("position_rmse_mm", float('inf'))
         if metrics["position_rmse_mm"] < best_pos:
@@ -103,7 +101,7 @@ class Normalizer:
         """Compute normalization statistics from training data."""
         self.input_mean = np.mean(inputs, axis=0)
         self.input_std = np.std(inputs, axis=0)
-        self.input_std[self.input_std < 1e-8] = 1.0  # Avoid division by zero
+        self.input_std[self.input_std < 1e-8] = 1.0
 
         self.output_mean = np.mean(outputs, axis=0)
         self.output_std = np.std(outputs, axis=0)

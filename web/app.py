@@ -16,7 +16,6 @@ RESULTS_DIR = project_root / "results"
 DATA_DIR = project_root / "data"
 MODELS_DIR = project_root / "models"
 
-# Lazy-load the solver
 _solver = None
 
 
@@ -62,7 +61,6 @@ def api_predict():
             return jsonify({"error": "Model not loaded"}), 500
 
         result = solver.solve([x, y, z, roll, pitch, yaw])
-        # Add arm positions for 3D visualization
         result['arm_positions'] = solver.get_arm_positions(result['joint_angles'])
         return jsonify(result)
     except Exception as e:
@@ -85,7 +83,6 @@ def api_trajectory():
         waypoints = get_trajectory(traj_type, n_points=n_points)
         results = solver.solve_trajectory(waypoints)
 
-        # Collect arm positions for each frame
         frames = []
         for r in results:
             frames.append({
@@ -128,7 +125,6 @@ def api_random_demo():
     if solver is None:
         return jsonify({"error": "Model not loaded"}), 500
 
-    # Generate a random reachable pose
     from src.robot_model import RobotModel
     robot = RobotModel()
     q_rand = robot.random_joint_config()

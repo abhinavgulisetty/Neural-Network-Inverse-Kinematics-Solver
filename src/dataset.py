@@ -63,7 +63,7 @@ def create_dataloaders(data_dir, batch_size=256, normalize=True, num_workers=0):
             batch_size=batch_size,
             shuffle=(split == 'train'),
             num_workers=num_workers,
-            pin_memory=False  # CPU training
+            pin_memory=False
         )
         print(f"  {split}: {len(dataset)} samples, {len(loaders[split])} batches")
 

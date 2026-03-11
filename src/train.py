@@ -35,7 +35,7 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
         batch_size: training batch size
         lr: initial learning rate
         patience: early stopping patience
-        device: 'cpu' (we're CPU-only)
+        device: 'cpu' (we are CPU-only)
 
     Returns:
         model, training_history dict
@@ -47,7 +47,6 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
         model_dir = project_root / "models"
     ensure_dir(model_dir)
 
-    # Set CPU threads
     n_threads = os.cpu_count() or 4
     torch.set_num_threads(n_threads)
     print(f"\n{'='*60}")
@@ -55,18 +54,14 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
     print(f"{'='*60}")
     print(f"Device: CPU ({n_threads} threads)")
 
-    # Create dataloaders
     print("\nLoading data...")
     loaders = create_dataloaders(str(data_dir), batch_size=batch_size)
 
-    # Create model
     model, arch_name = create_model(iteration)
     model = model.to(device)
 
-    # Loss function
     is_sincos = isinstance(model, IKNetV4)
     if is_sincos:
-        # For sin/cos model, we need a custom loss
         def sincos_loss(pred, target_angles):
             """MSE on sin/cos representation of target angles."""
             target_sincos = torch.zeros(target_angles.shape[0], 12, device=device)
@@ -78,15 +73,12 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
     else:
         criterion = nn.MSELoss()
 
-    # Optimizer
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
 
-    # LR scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', factor=0.5, patience=10
     )
 
-    # Training
     best_val_loss = float('inf')
     epochs_no_improve = 0
     history = {
@@ -103,7 +95,6 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
     for epoch in range(1, max_epochs + 1):
         epoch_start = time.time()
 
-        # === Training ===
         model.train()
         train_loss = 0.0
         n_batches = 0
@@ -127,7 +118,6 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
 
         train_loss /= n_batches
 
-        # === Validation ===
         model.eval()
         val_loss = 0.0
         n_val_batches = 0
@@ -145,20 +135,16 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
         val_loss /= n_val_batches
         epoch_time = time.time() - epoch_start
 
-        # Log
         history['train_loss'].append(train_loss)
         history['val_loss'].append(val_loss)
         history['lr'].append(optimizer.param_groups[0]['lr'])
         history['epoch_time'].append(epoch_time)
 
-        # LR scheduling
         scheduler.step(val_loss)
 
-        # Early stopping check
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             epochs_no_improve = 0
-            # Save checkpoint
             torch.save({
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
@@ -170,7 +156,6 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
         else:
             epochs_no_improve += 1
 
-        # Print progress
         if epoch % 5 == 0 or epoch == 1:
             print(f"  Epoch {epoch:3d}/{max_epochs} | "
                   f"Train: {train_loss:.6f} | Val: {val_loss:.6f} | "
@@ -179,13 +164,12 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
                   f"No improve: {epochs_no_improve}/{patience}")
 
         if epochs_no_improve >= patience:
-            print(f"\n  ⏹ Early stopping at epoch {epoch} (no improvement for {patience} epochs)")
+            print(f"\n  Early stopping at epoch {epoch} (no improvement for {patience} epochs)")
             break
 
-    # Load best checkpoint
     checkpoint = torch.load(checkpoint_path, weights_only=False)
     model.load_state_dict(checkpoint['model_state_dict'])
-    print(f"\n  ✅ Best val_loss: {best_val_loss:.6f} at epoch {checkpoint['epoch']}")
+    print(f"\n  Best val_loss: {best_val_loss:.6f} at epoch {checkpoint['epoch']}")
     print(f"  Model saved to: {checkpoint_path}")
 
     return model, history
@@ -210,23 +194,19 @@ def run_training_iterations(max_iterations=5):
             print(f"\n  Iteration {iteration} already completed, skipping...")
             continue
 
-        # Train
         model, history = train_model(iteration, data_dir, model_dir)
 
-        # Save training history
         history_path = results_dir / f"training_history_iter{iteration}.json"
         serializable_history = {k: [float(v) for v in vals] for k, vals in history.items()}
         with open(history_path, 'w') as f:
             json.dump(serializable_history, f, indent=2)
 
-        # Evaluate
         print(f"\n  Evaluating iteration {iteration}...")
         metrics = evaluate_model(
             model, iteration, data_dir, results_dir,
             is_sincos=isinstance(model, IKNetV4)
         )
 
-        # Build hyperparams record
         hyperparams = {
             "batch_size": 256,
             "learning_rate": 1e-3,
@@ -240,11 +220,10 @@ def run_training_iterations(max_iterations=5):
         from src.model import get_architecture_description
         arch_desc = get_architecture_description(iteration)
 
-        # Determine what changed vs previous
         if iteration == 1:
-            changes = "Baseline MLP with 4×256 hidden layers, ReLU, Dropout 0.2"
+            changes = "Baseline MLP with 4x256 hidden layers, ReLU, Dropout 0.2"
         elif iteration == 2:
-            changes = "Added BatchNorm, increased to 5 layers (512→128), reduced dropout to 0.15"
+            changes = "Added BatchNorm, increased to 5 layers (512 to 128), reduced dropout to 0.15"
         elif iteration == 3:
             changes = "Added residual/skip connections for better gradient flow"
         elif iteration == 4:
@@ -256,7 +235,6 @@ def run_training_iterations(max_iterations=5):
 
         log_iteration(iteration, arch_desc, hyperparams, metrics, changes, next_steps)
 
-        # Check if targets met
         pos_rmse = metrics.get('position_rmse_mm', float('inf'))
         success_rate = metrics.get('success_rate_pct', 0)
         print(f"\n  Iteration {iteration} results:")
@@ -264,7 +242,7 @@ def run_training_iterations(max_iterations=5):
         print(f"    Success rate: {success_rate:.1f}% (target: > 95%)")
 
         if pos_rmse < 1.0 and success_rate > 95:
-            print(f"\n  🎯 Targets met at iteration {iteration}! Stopping early.")
+            print(f"\n  Targets met at iteration {iteration}! Stopping early.")
             break
 
     update_phase("phase3", "Iterative training complete")

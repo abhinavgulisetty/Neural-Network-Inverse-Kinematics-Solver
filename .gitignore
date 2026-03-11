@@ -1,5 +1,17 @@
-# Ignore all files in the project directory
-Plan.md
-document.md
-context_log.json
 /venv
+
+__pycache__/
+*.pyc
+*.pyo
+
+data/*.npz
+
+models/*.pth
+
+results/
+
+web/static/plots/
+
+*.egg-info/
+dist/
+build/
