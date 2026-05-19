@@ -1,7 +1,3 @@
-"""
-Training loop with early stopping, LR scheduling, and checkpoint saving.
-Optimized for CPU training.
-"""
 import os
 import time
 import json
@@ -24,22 +20,6 @@ from src.evaluate import evaluate_model
 
 def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
                 batch_size=256, lr=1e-3, patience=25, device='cpu'):
-    """
-    Train a model for one iteration of the experiment.
-
-    Args:
-        iteration: which architecture to use (1-5)
-        data_dir: path to data directory
-        model_dir: path to save models
-        max_epochs: maximum training epochs
-        batch_size: training batch size
-        lr: initial learning rate
-        patience: early stopping patience
-        device: 'cpu' (we are CPU-only)
-
-    Returns:
-        model, training_history dict
-    """
     project_root = Path(__file__).parent.parent
     if data_dir is None:
         data_dir = project_root / "data"
@@ -63,7 +43,6 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
     is_sincos = isinstance(model, IKNetV4)
     if is_sincos:
         def sincos_loss(pred, target_angles):
-            """MSE on sin/cos representation of target angles."""
             target_sincos = torch.zeros(target_angles.shape[0], 12, device=device)
             for i in range(6):
                 target_sincos[:, 2*i] = torch.sin(target_angles[:, i])
@@ -176,10 +155,6 @@ def train_model(iteration, data_dir=None, model_dir=None, max_epochs=100,
 
 
 def run_training_iterations(max_iterations=5):
-    """
-    Run the iterative training loop.
-    Checks context_log to resume from where it left off.
-    """
     project_root = Path(__file__).parent.parent
     data_dir = project_root / "data"
     model_dir = project_root / "models"

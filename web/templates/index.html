@@ -1,276 +1,389 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neural IK Solver — 6-DOF Manipulator Dashboard</title>
-    <meta name="description"
-        content="Neural Network-Based Inverse Kinematics Solver for 6-DOF Industrial Manipulator — Interactive Dashboard">
+    <title>Neural IK Solver — PUMA 560</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
-    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 </head>
-
 <body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <div class="nav-logo">
+                <span class="logo-text">PUMA 560</span>
+                <span class="logo-tag">Neural IK</span>
+            </div>
+            <div class="nav-links">
+                <a href="#demo">Demo</a>
+                <a href="#performance">Performance</a>
+                <a href="#method">Method</a>
+            </div>
+        </div>
+    </nav>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <div class="logo-icon"></div>
-                <div>
-                    <h1 class="header-title">Neural IK Solver</h1>
-                    <p class="header-sub">6-DOF Industrial Manipulator • Deep Learning Inverse Kinematics</p>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <p class="hero-label">Inverse Kinematics Solver</p>
+                <h1 class="hero-title">Neural network learns<br>robot arm positioning</h1>
+                <p class="hero-desc">
+                    A hybrid approach combining feedforward neural networks with 
+                    test-time optimization achieves sub-millimeter positioning accuracy 
+                    for the PUMA 560 6-DOF manipulator.
+                </p>
+                <div class="hero-metrics">
+                    <div class="metric">
+                        <span class="metric-value" data-value="0.24">—</span>
+                        <span class="metric-label">mm mean error</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" data-value="94.75">—</span>
+                        <span class="metric-label">% sub-1mm accuracy</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" data-value="6">—</span>
+                        <span class="metric-label">degrees of freedom</span>
+                    </div>
                 </div>
             </div>
-            <div class="header-right">
-                <div class="status-badge" id="statusBadge">
-                    <span class="status-dot"></span>
-                    <span id="statusText">Loading...</span>
+            <div class="hero-viz">
+                <div id="robotCanvas"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Demo Section -->
+    <section class="section" id="demo">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-label">Interactive Demo</span>
+                <h2 class="section-title">Try the solver</h2>
+            </div>
+            
+            <div class="demo-layout">
+                <div class="demo-controls">
+                    <div class="control-group">
+                        <label class="control-label">Target Position (meters)</label>
+                        <div class="slider-row">
+                            <span class="slider-name">X</span>
+                            <input type="range" id="inputX" min="-0.6" max="0.6" step="0.01" value="0.4">
+                            <span class="slider-val" id="valX">0.40</span>
+                        </div>
+                        <div class="slider-row">
+                            <span class="slider-name">Y</span>
+                            <input type="range" id="inputY" min="-0.6" max="0.6" step="0.01" value="0.0">
+                            <span class="slider-val" id="valY">0.00</span>
+                        </div>
+                        <div class="slider-row">
+                            <span class="slider-name">Z</span>
+                            <input type="range" id="inputZ" min="0.0" max="1.0" step="0.01" value="0.6">
+                            <span class="slider-val" id="valZ">0.60</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Target Orientation (radians)</label>
+                        <div class="slider-row">
+                            <span class="slider-name">Roll</span>
+                            <input type="range" id="inputRoll" min="-3.14" max="3.14" step="0.01" value="0.0">
+                            <span class="slider-val" id="valRoll">0.00</span>
+                        </div>
+                        <div class="slider-row">
+                            <span class="slider-name">Pitch</span>
+                            <input type="range" id="inputPitch" min="-3.14" max="3.14" step="0.01" value="3.14">
+                            <span class="slider-val" id="valPitch">3.14</span>
+                        </div>
+                        <div class="slider-row">
+                            <span class="slider-name">Yaw</span>
+                            <input type="range" id="inputYaw" min="-3.14" max="3.14" step="0.01" value="0.0">
+                            <span class="slider-val" id="valYaw">0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Solver Mode</label>
+                        <div class="mode-toggle">
+                            <button class="mode-btn active" data-mode="nn">NN Only</button>
+                            <button class="mode-btn" data-mode="tto">NN + TTO</button>
+                        </div>
+                        <p class="mode-note" id="modeNote">Fast inference (~0.5ms), ~15mm error</p>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="solveBtn">Solve IK</button>
+                        <button class="btn btn-secondary" id="randomBtn">Random Pose</button>
+                    </div>
+                </div>
+                
+                <div class="demo-viz">
+                    <div id="demoCanvas"></div>
+                    <div class="demo-result" id="demoResult">
+                        <p class="result-hint">Click "Solve IK" or "Random Pose" to see results</p>
+                    </div>
                 </div>
             </div>
         </div>
-    </header>
+    </section>
 
-    <!-- Main Content -->
-    <main class="main-content">
-
-        <!-- Section 1: Key Metric Cards -->
-        <section class="section" id="metricsSection">
-            <h2 class="section-title">Key Performance Metrics</h2>
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-label">Position RMSE</div>
-                    <div class="metric-value" id="posRmse">—</div>
-                    <div class="metric-unit">mm (target: &lt; 1.0)</div>
-                    <div class="metric-bar">
-                        <div class="metric-bar-fill" id="posBar"></div>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-label">Orientation RMSE</div>
-                    <div class="metric-value" id="oriRmse">—</div>
-                    <div class="metric-unit">deg (target: &lt; 0.5°)</div>
-                    <div class="metric-bar">
-                        <div class="metric-bar-fill" id="oriBar"></div>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-label">Avg Inference</div>
-                    <div class="metric-value" id="inferenceTime">—</div>
-                    <div class="metric-unit">ms (target: &lt; 1 ms)</div>
-                    <div class="metric-bar">
-                        <div class="metric-bar-fill speed" id="inferBar"></div>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-label">Speedup Factor</div>
-                    <div class="metric-value" id="speedupFactor">—</div>
-                    <div class="metric-unit">× vs numerical solver</div>
-                    <div class="metric-bar">
-                        <div class="metric-bar-fill speedup" id="speedupBar"></div>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-icon"></div>
-                    <div class="metric-label">Best Iteration</div>
-                    <div class="metric-value" id="bestIter">—</div>
-                    <div class="metric-unit">out of 5 architectures</div>
-                    <div class="metric-bar">
-                        <div class="metric-bar-fill iter" id="iterBar"></div>
-                    </div>
-                </div>
+    <!-- Performance Section -->
+    <section class="section section-dark" id="performance">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-label">Benchmarks</span>
+                <h2 class="section-title">Honest performance metrics</h2>
             </div>
-        </section>
-
-        <!-- Section 2: Training Progress -->
-        <section class="section" id="trainingSection">
-            <h2 class="section-title">Training Progress</h2>
-            <div class="two-col">
-                <div class="glass-card">
-                    <h3>Training & Validation Loss</h3>
-                    <img id="lossPlot" class="plot-img" src="/static/plots/training_loss_curves.png"
-                        alt="Training Loss Curves" onerror="this.style.display='none'">
-                </div>
-                <div class="glass-card">
-                    <h3>Iteration Comparison</h3>
-                    <img id="iterPlot" class="plot-img" src="/static/plots/iteration_comparison.png"
-                        alt="Iteration Comparison" onerror="this.style.display='none'">
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 3: Error Analysis -->
-        <section class="section" id="errorSection">
-            <h2 class="section-title">Error Analysis</h2>
-            <div class="three-col">
-                <div class="glass-card">
-                    <h3>Position Error Distribution</h3>
-                    <img class="plot-img" src="/static/plots/position_error_histogram.png" alt="Position Errors"
-                        onerror="this.style.display='none'">
-                </div>
-                <div class="glass-card">
-                    <h3>Orientation Error Distribution</h3>
-                    <img class="plot-img" src="/static/plots/orientation_error_histogram.png" alt="Orientation Errors"
-                        onerror="this.style.display='none'">
-                </div>
-                <div class="glass-card">
-                    <h3>Per-Joint Error</h3>
-                    <img class="plot-img" src="/static/plots/per_joint_error.png" alt="Per-Joint Error"
-                        onerror="this.style.display='none'">
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 4: Live Prediction -->
-        <section class="section" id="predictionSection">
-            <h2 class="section-title">Live IK Prediction</h2>
-            <div class="prediction-layout">
-                <div class="glass-card prediction-controls">
-                    <h3>Target End-Effector Pose</h3>
-                    <div class="input-grid">
-                        <div class="input-group">
-                            <label>X (m)</label>
-                            <input type="range" id="inputX" min="-0.8" max="0.8" step="0.01" value="0.4">
-                            <span class="input-val" id="valX">0.40</span>
+            
+            <div class="perf-grid">
+                <div class="perf-card">
+                    <div class="perf-header">
+                        <span class="perf-title">Neural Network Only</span>
+                        <span class="perf-badge">Fast</span>
+                    </div>
+                    <div class="perf-metrics">
+                        <div class="perf-row">
+                            <span>Mean Position Error</span>
+                            <span class="perf-value">~15 mm</span>
                         </div>
-                        <div class="input-group">
-                            <label>Y (m)</label>
-                            <input type="range" id="inputY" min="-0.8" max="0.8" step="0.01" value="0.0">
-                            <span class="input-val" id="valY">0.00</span>
+                        <div class="perf-row">
+                            <span>Inference Time</span>
+                            <span class="perf-value highlight">0.2–0.6 ms</span>
                         </div>
-                        <div class="input-group">
-                            <label>Z (m)</label>
-                            <input type="range" id="inputZ" min="-0.5" max="1.0" step="0.01" value="0.6">
-                            <span class="input-val" id="valZ">0.60</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Roll (rad)</label>
-                            <input type="range" id="inputRoll" min="-3.14" max="3.14" step="0.01" value="0.0">
-                            <span class="input-val" id="valRoll">0.00</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Pitch (rad)</label>
-                            <input type="range" id="inputPitch" min="-3.14" max="3.14" step="0.01" value="3.14">
-                            <span class="input-val" id="valPitch">3.14</span>
-                        </div>
-                        <div class="input-group">
-                            <label>Yaw (rad)</label>
-                            <input type="range" id="inputYaw" min="-3.14" max="3.14" step="0.01" value="0.0">
-                            <span class="input-val" id="valYaw">0.00</span>
+                        <div class="perf-row">
+                            <span>Sub-1mm Rate</span>
+                            <span class="perf-value">~0%</span>
                         </div>
                     </div>
-                    <div class="btn-row">
-                        <button class="btn btn-primary" onclick="predict()">Predict IK</button>
-                        <button class="btn btn-secondary" onclick="randomDemo()">Random Pose</button>
-                    </div>
-                    <div class="prediction-result" id="predictionResult">
-                        <p>Click <strong>Predict IK</strong> or <strong>Random Pose</strong> to see results</p>
-                    </div>
+                    <p class="perf-note">Good for real-time applications where approximate solutions are acceptable.</p>
                 </div>
-                <div class="glass-card arm-viz">
-                    <h3>3D Robot Arm Visualization</h3>
-                    <div id="armPlot3D" style="width:100%;height:500px;"></div>
+                
+                <div class="perf-card featured">
+                    <div class="perf-header">
+                        <span class="perf-title">NN + Fast TTO</span>
+                        <span class="perf-badge accent">Balanced</span>
+                    </div>
+                    <div class="perf-metrics">
+                        <div class="perf-row">
+                            <span>Mean Position Error</span>
+                            <span class="perf-value highlight">~1 mm</span>
+                        </div>
+                        <div class="perf-row">
+                            <span>Inference Time</span>
+                            <span class="perf-value highlight">~70 ms</span>
+                        </div>
+                        <div class="perf-row">
+                            <span>Sub-5mm Rate</span>
+                            <span class="perf-value">100%</span>
+                        </div>
+                    </div>
+                    <p class="perf-note">30 steps of vanilla SGD with early stopping. Interactive speed with good precision.</p>
+                </div>
+                
+                <div class="perf-card">
+                    <div class="perf-header">
+                        <span class="perf-title">NN + Full TTO</span>
+                        <span class="perf-badge">Best Accuracy</span>
+                    </div>
+                    <div class="perf-metrics">
+                        <div class="perf-row">
+                            <span>Mean Position Error</span>
+                            <span class="perf-value">0.24 mm</span>
+                        </div>
+                        <div class="perf-row">
+                            <span>Inference Time</span>
+                            <span class="perf-value">400–500 ms</span>
+                        </div>
+                        <div class="perf-row">
+                            <span>Sub-1mm Rate</span>
+                            <span class="perf-value">94.75%</span>
+                        </div>
+                    </div>
+                    <p class="perf-note">100 steps with Adam optimizer for sub-mm precision. Too slow for interactive use.</p>
+                </div>
+                
+                <div class="perf-card">
+                    <div class="perf-header">
+                        <span class="perf-title">Numerical Solver (LM)</span>
+                        <span class="perf-badge">Reference</span>
+                    </div>
+                    <div class="perf-metrics">
+                        <div class="perf-row">
+                            <span>Mean Position Error</span>
+                            <span class="perf-value">0.11 mm</span>
+                        </div>
+                        <div class="perf-row">
+                            <span>Solve Time</span>
+                            <span class="perf-value">~20 ms</span>
+                        </div>
+                        <div class="perf-row">
+                            <span>Success Rate</span>
+                            <span class="perf-value">100%</span>
+                        </div>
+                    </div>
+                    <p class="perf-note">Levenberg-Marquardt baseline. Faster but requires good initialization.</p>
                 </div>
             </div>
-        </section>
+            
+            <div class="perf-comparison">
+                <h3 class="comparison-title">Model Architecture Comparison</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Position Error</th>
+                            <th>Time</th>
+                            <th>Parameters</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>V1 — Baseline MLP</td>
+                            <td>19.85 mm</td>
+                            <td>0.18 ms</td>
+                            <td>1.2M</td>
+                        </tr>
+                        <tr>
+                            <td>V2 — Deeper MLP</td>
+                            <td>21.30 mm</td>
+                            <td>0.62 ms</td>
+                            <td>2.1M</td>
+                        </tr>
+                        <tr>
+                            <td>V4 — Best NN Only</td>
+                            <td>14.04 mm</td>
+                            <td>0.27 ms</td>
+                            <td>2.5M</td>
+                        </tr>
+                        <tr class="highlight">
+                            <td>Optimized + Fast TTO</td>
+                            <td><strong>~1 mm</strong></td>
+                            <td>~70 ms</td>
+                            <td>3.2M</td>
+                        </tr>
+                        <tr>
+                            <td>Optimized + Full TTO</td>
+                            <td><strong>0.24 mm</strong></td>
+                            <td>~450 ms</td>
+                            <td>3.2M</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 
-        <!-- Section 5: Trajectory Demo -->
-        <section class="section" id="trajectorySection">
-            <h2 class="section-title">Trajectory Following Demo</h2>
-            <div class="trajectory-layout">
-                <div class="glass-card traj-controls">
-                    <h3>Trajectory Settings</h3>
-                    <div class="traj-select">
-                        <label>Type:</label>
-                        <select id="trajType">
-                            <option value="circle">Circle</option>
-                            <option value="helix">Helix</option>
-                            <option value="line">Line</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" onclick="runTrajectory()" id="trajBtn">▶ Run Trajectory</button>
-                    <div id="trajStats" class="traj-stats">
-                        <p>Select a trajectory type and click Run</p>
-                    </div>
-                    <div class="traj-animations">
-                        <h4>Pre-generated Animations</h4>
-                        <img id="trajGif" class="plot-img" src="/static/plots/arm_animation_circle.gif"
-                            alt="Arm Animation" onerror="this.parentElement.style.display='none'">
+    <!-- Method Section -->
+    <section class="section" id="method">
+        <div class="section-inner">
+            <div class="section-header">
+                <span class="section-label">Technical Approach</span>
+                <h2 class="section-title">How it works</h2>
+            </div>
+            
+            <div class="method-flow">
+                <div class="method-step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h3>Neural Network</h3>
+                        <p>MLP with Fourier features maps target pose (x, y, z, roll, pitch, yaw) to 6 joint angles. Trained on 50K samples.</p>
+                        <div class="step-stat">
+                            <span class="stat-value">~15mm</span>
+                            <span class="stat-label">initial error</span>
+                        </div>
                     </div>
                 </div>
-                <div class="glass-card traj-viz">
-                    <h3>Live Trajectory Visualization</h3>
-                    <div id="trajPlot3D" style="width:100%;height:500px;"></div>
+                
+                <div class="method-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+                
+                <div class="method-step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h3>Differentiable FK</h3>
+                        <p>Forward kinematics implemented in PyTorch using DH parameters. Enables gradient computation through the kinematic chain.</p>
+                        <div class="step-stat">
+                            <span class="stat-value">6</span>
+                            <span class="stat-label">DH transforms</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="method-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+                
+                <div class="method-step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h3>Test-Time Optimization</h3>
+                        <p>Gradient descent (Adam) minimizes position error. NN provides warm start, TTO refines to target precision.</p>
+                        <div class="step-stat">
+                            <span class="stat-value">100</span>
+                            <span class="stat-label">optimization steps</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="method-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+                
+                <div class="method-step final">
+                    <div class="step-num">✓</div>
+                    <div class="step-content">
+                        <h3>Sub-mm Result</h3>
+                        <p>Final joint configuration achieves industrial-grade positioning accuracy for the PUMA 560 workspace.</p>
+                        <div class="step-stat">
+                            <span class="stat-value accent">0.24mm</span>
+                            <span class="stat-label">mean error</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </section>
-
-        <!-- Section 6: NN vs Numerical -->
-        <section class="section" id="comparisonSection">
-            <h2 class="section-title">Neural Network vs Numerical Solver</h2>
-            <div class="two-col">
-                <div class="glass-card">
-                    <h3>Performance Comparison</h3>
-                    <table class="comparison-table" id="comparisonTable">
-                        <thead>
-                            <tr>
-                                <th>Metric</th>
-                                <th>Neural Network</th>
-                                <th>Numerical (LM)</th>
-                                <th>Winner</th>
-                            </tr>
-                        </thead>
-                        <tbody id="comparisonBody">
-                            <tr>
-                                <td colspan="4" class="loading">Loading comparison data...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="glass-card">
-                    <h3>Inference Time Comparison</h3>
-                    <img class="plot-img" src="/static/plots/inference_time_comparison.png" alt="Inference Time"
-                        onerror="this.style.display='none'">
-                </div>
+            
+            <div class="dh-params">
+                <h3>PUMA 560 DH Parameters</h3>
+                <table class="dh-table">
+                    <thead>
+                        <tr>
+                            <th>Link</th>
+                            <th>a (m)</th>
+                            <th>d (m)</th>
+                            <th>α (rad)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>1</td><td>0.0000</td><td>0.6718</td><td>π/2</td></tr>
+                        <tr><td>2</td><td>0.4318</td><td>0.0000</td><td>0</td></tr>
+                        <tr><td>3</td><td>0.0203</td><td>0.1500</td><td>−π/2</td></tr>
+                        <tr><td>4</td><td>0.0000</td><td>0.4318</td><td>π/2</td></tr>
+                        <tr><td>5</td><td>0.0000</td><td>0.0000</td><td>−π/2</td></tr>
+                        <tr><td>6</td><td>0.0000</td><td>0.0000</td><td>0</td></tr>
+                    </tbody>
+                </table>
             </div>
-        </section>
-
-        <!-- Section 7: Iteration Log -->
-        <section class="section" id="iterationSection">
-            <h2 class="section-title">Training Iteration Log</h2>
-            <div id="iterationCards" class="iteration-grid">
-                <div class="glass-card loading-card">
-                    <p>Loading iteration data...</p>
-                </div>
-            </div>
-        </section>
-
-    </main>
+        </div>
+    </section>
 
     <!-- Footer -->
     <footer class="footer">
-        <p>Neural Network-Based IK Solver • BCSE421L Robotics Project • Gulisetty Abhinav (23BRS1213) & Rudraksh Mertia
-            (23BRS1263)</p>
+        <div class="footer-inner">
+            <p>Neural Network IK Solver for PUMA 560</p>
+            <p class="footer-credits">BCSE421L Robotics — Gulisetty Abhinav (23BRS1213) & Rudraksh Mertia (23BRS1263)</p>
+        </div>
     </footer>
 
-
-    <!-- Image Modal -->
-    <div id="imageModal" class="image-modal">
-        <span class="close-modal">&times;</span>
-        <img class="modal-content" id="modalImage">
-    </div>
-
     <script src="/static/js/main.js"></script>
-
 </body>
-
 </html>

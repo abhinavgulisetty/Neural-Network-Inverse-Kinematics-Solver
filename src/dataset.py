@@ -1,6 +1,3 @@
-"""
-PyTorch Dataset and DataLoader for IK training data.
-"""
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -8,15 +5,8 @@ from pathlib import Path
 
 
 class IKDataset(Dataset):
-    """PyTorch Dataset for inverse kinematics training."""
 
     def __init__(self, data_path, normalize=True, norm_params_path=None):
-        """
-        Args:
-            data_path: path to .npz file with 'poses' and 'joint_angles'
-            normalize: whether to normalize inputs/outputs
-            norm_params_path: path to normalization_params.npz
-        """
         data = np.load(data_path)
         self.poses = data['poses'].astype(np.float32)
         self.joint_angles = data['joint_angles'].astype(np.float32)
@@ -42,12 +32,6 @@ class IKDataset(Dataset):
 
 
 def create_dataloaders(data_dir, batch_size=256, normalize=True, num_workers=0):
-    """
-    Create train/val/test DataLoaders.
-
-    Returns:
-        dict with 'train', 'val', 'test' DataLoaders
-    """
     data_dir = Path(data_dir)
     norm_path = data_dir / "normalization_params.npz" if normalize else None
 

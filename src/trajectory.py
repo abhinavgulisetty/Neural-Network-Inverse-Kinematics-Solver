@@ -1,6 +1,3 @@
-"""
-Trajectory generation for circular, helical, and linear paths.
-"""
 import numpy as np
 from pathlib import Path
 import sys
@@ -10,18 +7,6 @@ from src.robot_model import RobotModel
 
 
 def generate_circular_trajectory(center=None, radius=0.1, n_points=100, plane='xy'):
-    """
-    Generate a circular trajectory in task space.
-
-    Args:
-        center: [x, y, z] center of circle (meters). If None, use robot workspace center.
-        radius: radius of circle (meters)
-        n_points: number of waypoints
-        plane: 'xy', 'xz', or 'yz'
-
-    Returns:
-        waypoints: (n_points, 6) array of [x, y, z, roll, pitch, yaw]
-    """
     if center is None:
         center = [0.4, 0.0, 0.4]
 
@@ -48,7 +33,6 @@ def generate_circular_trajectory(center=None, radius=0.1, n_points=100, plane='x
 
 
 def generate_helical_trajectory(center=None, radius=0.1, height=0.2, n_points=100):
-    """Generate a helical trajectory."""
     if center is None:
         center = [0.4, 0.0, 0.3]
 
@@ -65,7 +49,6 @@ def generate_helical_trajectory(center=None, radius=0.1, height=0.2, n_points=10
 
 
 def generate_linear_trajectory(start=None, end=None, n_points=100):
-    """Generate a straight-line trajectory."""
     if start is None:
         start = np.array([0.3, -0.2, 0.3, 0.0, np.pi, 0.0])
     if end is None:
@@ -83,7 +66,6 @@ def generate_linear_trajectory(start=None, end=None, n_points=100):
 
 
 def get_trajectory(traj_type='circle', n_points=100):
-    """Get a trajectory by type name."""
     if traj_type == 'circle':
         return generate_circular_trajectory(n_points=n_points)
     elif traj_type == 'helix':

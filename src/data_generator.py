@@ -1,6 +1,3 @@
-"""
-Training Data Generator: Uniform + Singularity + Boundary sampling.
-"""
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
@@ -12,7 +9,6 @@ from src.utils import Normalizer, log_dataset_stats, update_phase, ensure_dir
 
 
 class DataGenerator:
-    """Generate training data using forward kinematics."""
 
     def __init__(self):
         self.robot = RobotModel()
@@ -20,7 +16,6 @@ class DataGenerator:
         ensure_dir(self.data_dir)
 
     def generate_uniform(self, n_samples=100000):
-        """Phase 2a: Uniform random sampling across joint space."""
         print(f"\n=== Generating {n_samples} uniform samples ===")
         joint_angles = self.robot.random_joint_config(n=n_samples)
         poses = np.zeros((n_samples, 6))
@@ -43,7 +38,6 @@ class DataGenerator:
         return poses, joint_angles
 
     def generate_singularity(self, n_samples=50000):
-        """Phase 2b: Extra samples near singularity configurations."""
         print(f"\n=== Generating {n_samples} singularity-region samples ===")
         joint_angles = np.zeros((n_samples, 6))
         n_per_type = n_samples // 3
@@ -85,7 +79,6 @@ class DataGenerator:
         return poses, joint_angles
 
     def generate_boundary(self, n_samples=25000):
-        """Phase 2c: Samples near joint limits (workspace boundary)."""
         print(f"\n=== Generating {n_samples} boundary samples ===")
         joint_angles = np.zeros((n_samples, 6))
         limits_range = self.robot.joint_limits_upper - self.robot.joint_limits_lower
@@ -121,7 +114,6 @@ class DataGenerator:
         return poses, joint_angles
 
     def combine_and_preprocess(self):
-        """Combine all datasets, normalize, and split."""
         print("\n=== Combining and preprocessing datasets ===")
 
         all_poses = []
@@ -186,7 +178,6 @@ class DataGenerator:
 
 
 def generate_all_data():
-    """Run full data generation pipeline."""
     gen = DataGenerator()
     gen.generate_uniform(n_samples=100000)
     gen.generate_singularity(n_samples=50000)

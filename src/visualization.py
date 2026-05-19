@@ -1,6 +1,3 @@
-"""
-Visualization: plots, 3D arm rendering, animated GIFs.
-"""
 import numpy as np
 import json
 import matplotlib
@@ -17,7 +14,6 @@ from src.utils import ensure_dir
 
 
 def plot_training_curves(results_dir, output_dir):
-    """Plot training loss curves for all iterations."""
     results_dir = Path(results_dir)
     output_dir = Path(output_dir)
     ensure_dir(output_dir)
@@ -64,7 +60,6 @@ def plot_training_curves(results_dir, output_dir):
 
 
 def plot_error_histograms(results_dir, output_dir):
-    """Plot position and orientation error distributions."""
     results_dir = Path(results_dir)
     output_dir = Path(output_dir)
     ensure_dir(output_dir)
@@ -129,7 +124,6 @@ def plot_error_histograms(results_dir, output_dir):
 
 
 def plot_per_joint_error(results_dir, output_dir):
-    """Box plot of error per joint."""
     results_dir = Path(results_dir)
     output_dir = Path(output_dir)
     ensure_dir(output_dir)
@@ -181,7 +175,6 @@ def plot_per_joint_error(results_dir, output_dir):
 
 
 def plot_iteration_comparison(results_dir, output_dir):
-    """Bar chart comparing metrics across iterations."""
     results_dir = Path(results_dir)
     output_dir = Path(output_dir)
     ensure_dir(output_dir)
@@ -233,7 +226,6 @@ def plot_iteration_comparison(results_dir, output_dir):
 
 
 def plot_inference_comparison(results_dir, output_dir):
-    """Bar chart: NN vs numerical solver timing."""
     results_dir = Path(results_dir)
     output_dir = Path(output_dir)
     ensure_dir(output_dir)
@@ -287,7 +279,6 @@ def plot_inference_comparison(results_dir, output_dir):
 
 
 def plot_arm_3d(joint_angles, title="Robot Arm", save_path=None):
-    """Plot a single 3D arm configuration."""
     robot = RobotModel()
     link_pos = robot.get_link_positions(joint_angles)
 
@@ -317,14 +308,6 @@ def plot_arm_3d(joint_angles, title="Robot Arm", save_path=None):
 
 
 def generate_arm_animation(joint_trajectory, save_path, title="Arm Trajectory"):
-    """
-    Generate animated GIF of arm following a trajectory.
-
-    Args:
-        joint_trajectory: (N, 6) array of joint angles per frame
-        save_path: output path for the GIF
-        title: plot title
-    """
     robot = RobotModel()
     n_frames = len(joint_trajectory)
 
@@ -379,7 +362,6 @@ def generate_arm_animation(joint_trajectory, save_path, title="Arm Trajectory"):
 
 
 def generate_all_visualizations(results_dir=None, output_dir=None):
-    """Generate all visualization plots."""
     project_root = Path(__file__).parent.parent
     if results_dir is None:
         results_dir = project_root / "results"

@@ -1,6 +1,3 @@
-"""
-Utility functions for context logging, normalization, and shared helpers.
-"""
 import json
 import os
 import time
@@ -12,7 +9,6 @@ CONTEXT_LOG_PATH = PROJECT_ROOT / "context_log.json"
 
 
 def load_context_log():
-    """Load context log from disk."""
     if CONTEXT_LOG_PATH.exists():
         with open(CONTEXT_LOG_PATH, 'r') as f:
             return json.load(f)
@@ -28,14 +24,12 @@ def load_context_log():
 
 
 def save_context_log(context):
-    """Save context log to disk."""
     context["timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     with open(CONTEXT_LOG_PATH, 'w') as f:
         json.dump(context, f, indent=2, default=str)
 
 
 def update_phase(phase_id, description=""):
-    """Update the last completed phase."""
     ctx = load_context_log()
     ctx["last_completed_phase"] = phase_id
     ctx["phase_log"].append({
@@ -47,7 +41,6 @@ def update_phase(phase_id, description=""):
 
 
 def log_iteration(iteration_num, architecture, hyperparams, metrics, changes, next_steps):
-    """Log a training iteration."""
     ctx = load_context_log()
     entry = {
         "iteration": iteration_num,
@@ -75,21 +68,18 @@ def log_iteration(iteration_num, architecture, hyperparams, metrics, changes, ne
 
 
 def log_decision(decision):
-    """Log a design decision."""
     ctx = load_context_log()
     ctx["decisions"].append(decision)
     save_context_log(ctx)
 
 
 def log_dataset_stats(stats):
-    """Log dataset statistics."""
     ctx = load_context_log()
     ctx["dataset_stats"] = stats
     save_context_log(ctx)
 
 
 class Normalizer:
-    """Handles input/output normalization for the neural network."""
 
     def __init__(self):
         self.input_mean = None
@@ -98,7 +88,6 @@ class Normalizer:
         self.output_std = None
 
     def fit(self, inputs, outputs):
-        """Compute normalization statistics from training data."""
         self.input_mean = np.mean(inputs, axis=0)
         self.input_std = np.std(inputs, axis=0)
         self.input_std[self.input_std < 1e-8] = 1.0
@@ -116,6 +105,9 @@ class Normalizer:
     def denormalize_output(self, y_norm):
         return y_norm * self.output_std + self.output_mean
 
+    def denormalize_input(self, x_norm):
+        return x_norm * self.input_std + self.input_mean
+
     def save(self, path):
         np.savez(path,
                  input_mean=self.input_mean, input_std=self.input_std,
@@ -130,5 +122,4 @@ class Normalizer:
 
 
 def ensure_dir(path):
-    """Ensure a directory exists."""
     Path(path).mkdir(parents=True, exist_ok=True)

@@ -1,144 +1,262 @@
-# Neural Network Inverse Kinematics Solver
+# SOTA Neural Network Inverse Kinematics Solver
 
-A neural network based inverse kinematics solver for the PUMA 560 6-DOF robotic manipulator. The project trains multiple neural network architectures to predict joint angles from target end-effector poses, replacing traditional numerical IK solvers with a faster learned approach.
+A state-of-the-art neural network based inverse kinematics solver for the PUMA 560 6-DOF robotic manipulator. This project implements cutting-edge deep learning architectures including Transformers, Physics-Informed Neural Networks (PINNs), Conditional Invertible Neural Networks (cINNs), Diffusion Models, and Mixture Density Networks (MDNs) for learning the inverse kinematics mapping.
 
-## Overview
+## Key Features
 
-The solver uses forward kinematics data from the PUMA 560 robot model to train feedforward neural networks that map 6-DOF end-effector poses (position + orientation) to 6 joint angles. Joint limits are restricted to ensure a bijective (one-to-one) mapping between joint space and task space, which avoids the ambiguity problems inherent in general IK solutions.
+- **10 Neural Network Architectures** (V1-V10): From baseline MLPs to SOTA architectures
+- **Physics-Informed Learning**: Differentiable FK layer for physics-based loss functions
+- **Multi-Solution Handling**: cINN and Diffusion models can sample multiple valid IK solutions
+- **Uncertainty Quantification**: MDN provides confidence estimates for predictions
+- **Test-Time Optimization**: Gradient-based refinement for sub-millimeter accuracy
+- **Ensemble Methods**: Combine multiple models for robust predictions
+- **Curriculum Learning**: Progressive training from easy to hard samples
+- **GPU Acceleration**: Mixed precision training with automatic device selection
 
-Five model architectures are trained and compared iteratively:
+## Model Architectures
 
-1. **IKNetV1** - Baseline MLP with 4 hidden layers of 256 neurons
-2. **IKNetV2** - Deeper network with BatchNorm, 5 layers from 512 down to 128
-3. **IKNetV3** - Residual connections for better gradient flow
-4. **IKNetV4** - Sin/cos output encoding to handle angle wrapping
-5. **IKNetV5** - Multi-head architecture with separate position and orientation heads
+### Basic Models (V1-V5)
+| Version | Architecture | Description |
+|---------|-------------|-------------|
+| V1 | Baseline MLP | 4 hidden layers, 256 neurons, ReLU, Dropout |
+| V2 | Deep + BatchNorm | 5 layers (512→128), BatchNorm, improved stability |
+| V3 | Residual Network | Skip connections for gradient flow |
+| V4 | Sin/Cos Encoding | Handles angle discontinuities at ±π |
+| V5 | Multi-Head | Separate position (J1-3) and orientation (J4-6) heads |
+
+### Advanced Models (V6-V10)
+| Version | Architecture | Key Innovation |
+|---------|-------------|----------------|
+| V6 | **Transformer** | Self-attention for joint correlations, Fourier positional encoding |
+| V7 | **Physics-Informed (PINN)** | Differentiable FK layer, FK consistency loss, iterative refinement |
+| V8 | **Conditional INN (cINN)** | Invertible architecture, learns full IK solution distribution |
+| V9 | **Diffusion Model** | Denoising diffusion, iterative sampling, multi-modal solutions |
+| V10 | **Mixture Density Network** | Gaussian mixture output, uncertainty quantification |
 
 ## Project Structure
 
 ```
 .
 ├── src/
-│   ├── robot_model.py      # PUMA 560 FK/IK using roboticstoolbox
-│   ├── data_generator.py   # Training data generation (uniform, singularity, boundary)
-│   ├── dataset.py          # PyTorch Dataset and DataLoader
-│   ├── model.py            # Neural network architectures (V1-V5)
-│   ├── train.py            # Training loop with early stopping
-│   ├── evaluate.py         # Evaluation metrics and benchmarking
-│   ├── ik_solver.py        # Production solver API
-│   ├── visualization.py    # Plot generation
-│   ├── trajectory.py       # Trajectory generation (circle, helix, line)
-│   └── utils.py            # Normalization, logging, helpers
+│   ├── robot_model.py          # PUMA 560 FK/IK using roboticstoolbox
+│   ├── data_generator.py       # Training data generation
+│   ├── dataset.py              # PyTorch Dataset and DataLoader
+│   ├── model.py                # Basic architectures (V1-V5) + registry
+│   ├── models_advanced.py      # SOTA architectures (V6-V10)
+│   ├── train.py                # Basic training loop
+│   ├── train_advanced.py       # Advanced training (physics loss, curriculum)
+│   ├── evaluate.py             # Basic evaluation
+│   ├── evaluate_advanced.py    # Comprehensive benchmarking
+│   ├── ensemble.py             # Ensemble methods
+│   ├── ik_solver.py            # Production solver API
+│   ├── visualization.py        # Plot generation
+│   ├── trajectory.py           # Trajectory generation
+│   └── utils.py                # Normalization, logging, helpers
 ├── scripts/
-│   ├── run_all.py          # Full pipeline execution
-│   ├── run_web.py          # Launch web dashboard
-│   └── debug_data.py       # Data inspection utility
+│   ├── run_all.py              # Basic pipeline (V1-V5)
+│   ├── run_advanced.py         # Advanced pipeline (V6-V10)
+│   ├── run_web.py              # Launch web dashboard
+│   └── debug_data.py           # Data inspection
 ├── web/
-│   ├── app.py              # Flask web application
-│   ├── templates/          # HTML templates
-│   └── static/             # CSS, JS, generated plots
-├── data/                   # Generated training/test datasets (.npz)
-├── models/                 # Saved model checkpoints (.pth)
-├── results/                # Evaluation metrics and error data
-└── requirements.txt        # Python dependencies
+│   ├── app.py                  # Flask web application
+│   ├── templates/              # HTML templates
+│   └── static/                 # CSS, JS, plots
+├── data/                       # Training/test datasets (.npz)
+├── models/                     # Model checkpoints (.pth)
+├── results/                    # Evaluation metrics
+└── requirements.txt            # Python dependencies
 ```
 
-## Setup
+## Installation
 
 ### Prerequisites
+- Python 3.10+
+- CUDA 11.8+ (optional, for GPU acceleration)
 
-- Python 3.10 or later
-- pip
-
-### Installation
-
+### Setup
 ```bash
+# Create virtual environment
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Linux/Mac
+# or: venv\Scripts\activate  # Windows
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-## Usage
+## Quick Start
 
-### Run the Full Pipeline
-
-This generates training data, trains all 5 model iterations, evaluates them, and produces visualizations:
-
+### 1. Run Basic Pipeline (V1-V5)
 ```bash
 python scripts/run_all.py
 ```
 
-The pipeline has 5 phases:
+### 2. Run Advanced Pipeline (V6-V10)
+```bash
+# Full pipeline: data check, train all, evaluate, ensemble
+python scripts/run_advanced.py --all
 
-1. Robot model verification
-2. Data generation (uniform, singularity, and boundary sampling)
-3. Iterative training of all 5 architectures
-4. Full evaluation and numerical IK benchmarking
-5. Visualization generation
+# Train specific models
+python scripts/run_advanced.py --train 6 7 10
 
-Progress is tracked in `context_log.json`, so the pipeline can resume from where it left off if interrupted.
+# Evaluate trained models
+python scripts/run_advanced.py --evaluate
 
-### Launch the Web Dashboard
+# Test ensemble methods
+python scripts/run_advanced.py --ensemble
 
+# View project summary
+python scripts/run_advanced.py --summary
+```
+
+### 3. Launch Web Dashboard
 ```bash
 python scripts/run_web.py
+# Open http://localhost:5000
 ```
 
-Then open `http://localhost:5000` in your browser. The dashboard provides:
-
-- Metrics overview across all training iterations
-- Live IK prediction with 3D arm visualization
-- Trajectory planning and animation
-- Error distribution plots and training curves
-
-### Run Individual Components
-
-Generate training data only:
+## Training Options
 
 ```bash
-python src/data_generator.py
+python scripts/run_advanced.py --train 6 7 8 9 10 \
+    --epochs 200 \
+    --batch_size 256 \
+    --no_tto  # Disable test-time optimization
 ```
 
-Train models only:
-
-```bash
-python src/train.py
-```
-
-Generate visualizations only:
-
-```bash
-python src/visualization.py
-```
-
-## Data Generation
-
-Training data is created by sampling joint configurations and computing forward kinematics to get corresponding end-effector poses. Three sampling strategies are used:
-
-- **Uniform**: 100,000 samples across the full restricted joint space
-- **Singularity**: 50,000 samples concentrated near singular configurations
-- **Boundary**: 25,000 samples near joint limits
-
-The combined dataset is normalized and split into 70% training, 15% validation, and 15% test sets.
+### Training Features
+- **Curriculum Learning**: Starts with easy samples (near home position), gradually introduces harder ones
+- **Physics-Informed Loss**: MSE on joints + FK consistency + joint limit penalty
+- **Warmup + Cosine Annealing**: Learning rate schedule for stable training
+- **Early Stopping**: Patience-based with best model restoration
+- **Mixed Precision**: FP16 training on GPU for 2x speedup
 
 ## Evaluation Metrics
 
-Models are evaluated on:
+| Metric | Description | Target |
+|--------|-------------|--------|
+| Position RMSE | End-effector position error | < 1 mm |
+| Orientation RMSE | Euler angle error | < 0.5° |
+| Success Rate (1mm) | % samples with pos < 1mm AND ori < 0.5° | > 95% |
+| Success Rate (5mm) | Relaxed criteria | > 99% |
+| Inference Time | Single sample prediction | < 1 ms |
 
-- Position RMSE in millimeters
-- Orientation RMSE in degrees
-- Per-joint prediction error
-- Inference time compared to numerical Levenberg-Marquardt IK
+## Advanced Features
+
+### Multi-Solution Sampling (V8, V9, V10)
+```python
+from src.models_advanced import IKNetV8
+
+model = IKNetV8()
+# Sample 10 different IK solutions for one pose
+solutions = model.sample(target_pose, n_samples=10, temperature=1.0)
+```
+
+### Uncertainty Quantification (V10)
+```python
+from src.models_advanced import IKNetV10
+
+model = IKNetV10()
+joints, uncertainty = model.predict_angles(pose, return_uncertainty=True)
+print(f"Predicted joints: {joints}, Uncertainty: {uncertainty:.3f}")
+```
+
+### Ensemble Prediction
+```python
+from src.ensemble import create_ensemble_from_checkpoints
+
+ensemble = create_ensemble_from_checkpoints(
+    model_dir="models/",
+    iterations=[6, 7, 10]
+)
+# Strategies: 'weighted_avg', 'best_of_n', 'uncertainty_weighted'
+joints = ensemble.predict_angles(pose, strategy='best_of_n')
+```
+
+### Test-Time Optimization
+```python
+from src.train_advanced import TestTimeOptimizer
+
+tto = TestTimeOptimizer(robot_model, n_steps=10, lr=0.01)
+refined_joints = tto.refine(initial_joints, target_pose)
+```
+
+## Technical Details
+
+### Data Generation
+- **Uniform**: 100K samples across joint space
+- **Singularity**: 50K samples near singular configurations
+- **Boundary**: 25K samples near joint limits
+- **Split**: 70% train, 15% validation, 15% test
+
+### PUMA 560 Joint Limits (Restricted for Bijective IK)
+| Joint | Lower | Upper |
+|-------|-------|-------|
+| 1 | -90° | +90° |
+| 2 | -90° | 0° |
+| 3 | 0° | +90° |
+| 4 | -90° | +90° |
+| 5 | -90° | +90° |
+| 6 | -90° | +90° |
+
+### Loss Functions
+- **Basic**: MSE on normalized joint angles
+- **Sin/Cos**: MSE on sin/cos representation (V4, V6, V7)
+- **Physics-Informed**: `L_total = L_joint + λ_fk * L_FK + λ_limit * L_limits`
+- **cINN**: Negative log-likelihood under normalizing flow
+- **Diffusion**: MSE on noise prediction
+- **MDN**: Negative log-likelihood under Gaussian mixture
+
+## Results
+
+Expected performance after training (depends on hyperparameters and epochs):
+
+| Model | Pos RMSE (mm) | Success 5mm | Inference (ms) |
+|-------|---------------|-------------|----------------|
+| V4 (Sin/Cos) | ~15-20 | ~60-70% | ~0.3 |
+| V6 (Transformer) | ~5-10 | ~85-90% | ~0.5 |
+| V7 (PINN) | ~3-8 | ~90-95% | ~0.8 |
+| V8 (cINN) | ~5-10 | ~85-90% | ~1.0 |
+| V10 (MDN) | ~5-12 | ~80-90% | ~0.4 |
+| V7 + TTO | ~0.5-2 | ~98-99% | ~5-10 |
+| Ensemble | ~2-5 | ~95-98% | ~2-5 |
+
+## Research References
+
+- **Transformers**: Vaswani et al., "Attention Is All You Need" (2017)
+- **Fourier Features**: Tancik et al., "Fourier Features Let Networks Learn High Frequency Functions" (2020)
+- **Physics-Informed NN**: Raissi et al., "Physics-informed neural networks" (2019)
+- **Normalizing Flows**: Ardizzone et al., "Guided Image Generation with Conditional Invertible Neural Networks" (2019)
+- **Diffusion Models**: Ho et al., "Denoising Diffusion Probabilistic Models" (2020)
+- **Mixture Density Networks**: Bishop, "Mixture Density Networks" (1994)
 
 ## Dependencies
 
-- PyTorch (neural network training and inference)
-- roboticstoolbox-python (PUMA 560 model and forward kinematics)
-- spatialmath-python (SE3 transformations)
-- NumPy, SciPy, Matplotlib (numerical computing and plotting)
-- Flask (web dashboard)
-- tqdm (progress bars)
+Core:
+- PyTorch >= 2.0.0
+- NumPy >= 1.24.0
+- roboticstoolbox-python >= 1.1.0
+- spatialmath-python >= 1.1.0
+
+Visualization:
+- Matplotlib >= 3.7.0
+- Plotly >= 5.15.0
+- Seaborn >= 0.12.0
+
+Web:
+- Flask >= 3.0.0
 
 ## License
 
-This project is provided as-is for educational and research purposes.
+This project is provided for educational and research purposes.
+
+## Citation
+
+If you use this code in your research, please cite:
+```
+@software{sota_ik_solver,
+  title={SOTA Neural Network Inverse Kinematics Solver},
+  year={2024},
+  description={State-of-the-art deep learning architectures for robotic inverse kinematics}
+}
+```

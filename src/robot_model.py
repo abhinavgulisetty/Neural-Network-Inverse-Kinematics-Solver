@@ -1,17 +1,11 @@
-"""
-Robot Model: PUMA 560 6-DOF manipulator with DH parameters, FK, and numerical IK.
-Uses roboticstoolbox-python for reliable computations.
-"""
 import numpy as np
 from spatialmath import SE3
 import roboticstoolbox as rtb
 
 
 class RobotModel:
-    """PUMA 560 6-DOF Industrial Manipulator."""
 
     def __init__(self):
-        """Initialize PUMA 560 using roboticstoolbox built-in model."""
         self.robot = rtb.models.DH.Puma560()
         self.n_joints = 6
 
@@ -22,15 +16,6 @@ class RobotModel:
         self.joint_limits_upper = np.radians([ 90,   0,  90,  90,  90,  90])
 
     def forward_kinematics(self, joint_angles):
-        """
-        Compute forward kinematics for given joint angles.
-
-        Args:
-            joint_angles: array of 6 joint angles in radians
-
-        Returns:
-            pose: array [x, y, z, roll, pitch, yaw] (meters, radians)
-        """
         q = np.asarray(joint_angles, dtype=np.float64)
         T = self.robot.fkine(q)
 
@@ -40,15 +25,6 @@ class RobotModel:
         return np.concatenate([pos, rpy])
 
     def batch_forward_kinematics(self, joint_angles_batch):
-        """
-        Compute FK for a batch of joint configurations.
-
-        Args:
-            joint_angles_batch: (N, 6) array of joint angles
-
-        Returns:
-            poses: (N, 6) array of [x, y, z, roll, pitch, yaw]
-        """
         N = joint_angles_batch.shape[0]
         poses = np.zeros((N, 6))
         for i in range(N):
@@ -56,18 +32,6 @@ class RobotModel:
         return poses
 
     def numerical_ik(self, target_pose, q0=None):
-        """
-        Solve IK numerically using roboticstoolbox.
-
-        Args:
-            target_pose: [x, y, z, roll, pitch, yaw]
-            q0: initial joint angle guess (optional)
-
-        Returns:
-            joint_angles: solution (6,) or None if failed
-            success: bool
-            solve_time_ms: float
-        """
         import time
 
         pos = target_pose[:3]
@@ -88,15 +52,6 @@ class RobotModel:
             return None, False, elapsed_ms
 
     def get_link_positions(self, joint_angles):
-        """
-        Get 3D positions of all joints/links for visualization.
-
-        Args:
-            joint_angles: (6,) array of joint angles
-
-        Returns:
-            positions: (7, 3) array with base + 6 joint positions
-        """
         q = np.asarray(joint_angles, dtype=np.float64)
         positions = [np.array([0, 0, 0])]
 
@@ -116,7 +71,6 @@ class RobotModel:
         return np.array(positions)
 
     def random_joint_config(self, n=1):
-        """Generate random joint configurations within restricted limits."""
         configs = np.random.uniform(
             self.joint_limits_lower,
             self.joint_limits_upper,
@@ -125,13 +79,11 @@ class RobotModel:
         return configs if n > 1 else configs[0]
 
     def is_within_limits(self, joint_angles):
-        """Check if joint angles are within restricted limits."""
         return np.all(joint_angles >= self.joint_limits_lower) and \
                np.all(joint_angles <= self.joint_limits_upper)
 
 
 def verify_robot_model():
-    """Run verification tests on the robot model."""
     print("=" * 60)
     print("ROBOT MODEL VERIFICATION")
     print("=" * 60)

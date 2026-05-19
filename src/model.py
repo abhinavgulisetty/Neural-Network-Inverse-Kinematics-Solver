@@ -1,13 +1,8 @@
-"""
-Neural Network architectures for Inverse Kinematics solving.
-Multiple architectures for iterative experimentation.
-"""
 import torch
 import torch.nn as nn
 
 
 class IKNetV1(nn.Module):
-    """Iteration 1: Baseline MLP with 4 hidden layers, 256 neurons."""
 
     def __init__(self):
         super().__init__()
@@ -32,7 +27,6 @@ class IKNetV1(nn.Module):
 
 
 class IKNetV2(nn.Module):
-    """Iteration 2: Deeper network with BatchNorm, 5 layers, wider, with batch normalization."""
 
     def __init__(self):
         super().__init__()
@@ -69,7 +63,6 @@ class IKNetV2(nn.Module):
 
 
 class ResidualBlock(nn.Module):
-    """Residual block with optional projection."""
 
     def __init__(self, in_dim, out_dim):
         super().__init__()
@@ -88,7 +81,6 @@ class ResidualBlock(nn.Module):
 
 
 class IKNetV3(nn.Module):
-    """Iteration 3: Residual connections for better gradient flow."""
 
     def __init__(self):
         super().__init__()
@@ -110,7 +102,6 @@ class IKNetV3(nn.Module):
 
 
 class IKNetV4(nn.Module):
-    """Iteration 4: Sin/Cos output encoding to handle angle wrapping."""
 
     def __init__(self):
         super().__init__()
@@ -142,7 +133,6 @@ class IKNetV4(nn.Module):
         return out
 
     def predict_angles(self, x):
-        """Convert sin/cos outputs to angles using atan2."""
         out = self.forward(x)
         angles = torch.zeros(x.shape[0], 6, device=x.device)
         for i in range(6):
@@ -153,7 +143,6 @@ class IKNetV4(nn.Module):
 
 
 class IKNetV5(nn.Module):
-    """Iteration 5: Multi-head with separate heads for position joints (1-3) and wrist joints (4-6)."""
 
     def __init__(self):
         super().__init__()
@@ -203,20 +192,53 @@ MODEL_REGISTRY = {
 }
 
 
-def create_model(iteration):
-    """Create model by iteration number."""
-    if iteration not in MODEL_REGISTRY:
-        raise ValueError(f"Unknown iteration {iteration}. Available: {list(MODEL_REGISTRY.keys())}")
-    name, cls = MODEL_REGISTRY[iteration]
-    print(f"\n  Creating model: {name}")
-    model = cls()
+def _get_extended_registry():
+    from src.models_advanced import ADVANCED_MODEL_REGISTRY
+    extended = MODEL_REGISTRY.copy()
+    extended.update(ADVANCED_MODEL_REGISTRY)
+    return extended
+
+
+def create_model(iteration, device='cpu'):
+    if iteration <= 5:
+        if iteration not in MODEL_REGISTRY:
+            raise ValueError(f"Unknown iteration {iteration}. Available: 1-10")
+        name, cls = MODEL_REGISTRY[iteration]
+        print(f"\n  Creating model: {name}")
+        model = cls()
+    else:
+        from src.models_advanced import create_advanced_model
+        model, name = create_advanced_model(iteration, device)
+        return model, name
+    
     n_params = sum(p.numel() for p in model.parameters())
     print(f"  Parameters: {n_params:,}")
     return model, name
 
 
 def get_architecture_description(iteration):
-    """Get human-readable architecture description."""
-    if iteration in MODEL_REGISTRY:
-        return MODEL_REGISTRY[iteration][0]
+    if iteration <= 5:
+        if iteration in MODEL_REGISTRY:
+            return MODEL_REGISTRY[iteration][0]
+    else:
+        from src.models_advanced import get_advanced_architecture_description
+        return get_advanced_architecture_description(iteration)
     return "Unknown"
+
+
+def list_all_models():
+    print("\n=== Available IK Model Architectures ===\n")
+    print("Basic Models (V1-V5):")
+    for i, (name, _) in MODEL_REGISTRY.items():
+        print(f"  {i}: {name}")
+    
+    print("\nAdvanced Models (V6-V10):")
+    try:
+        from src.models_advanced import ADVANCED_MODEL_REGISTRY
+        for i, (name, _) in ADVANCED_MODEL_REGISTRY.items():
+            print(f"  {i}: {name}")
+    except ImportError:
+        print("  (Advanced models not available)")
+    
+    print()
+    return list(MODEL_REGISTRY.keys()) + [6, 7, 8, 9, 10]

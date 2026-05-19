@@ -1,6 +1,3 @@
-"""
-Comprehensive evaluation metrics for the IK solver.
-"""
 import time
 import json
 import numpy as np
@@ -15,12 +12,6 @@ from src.utils import Normalizer, ensure_dir
 
 def evaluate_model(model, iteration, data_dir, results_dir,
                    is_sincos=False, device='cpu'):
-    """
-    Full evaluation of a trained model on test data.
-
-    Returns:
-        metrics dict
-    """
     data_dir = Path(data_dir)
     results_dir = Path(results_dir)
     ensure_dir(results_dir)
@@ -146,7 +137,6 @@ def evaluate_model(model, iteration, data_dir, results_dir,
 
 
 def run_numerical_ik_benchmark(data_dir, results_dir, n_samples=500):
-    """Benchmark the numerical IK solver for comparison."""
     data_dir = Path(data_dir)
     results_dir = Path(results_dir)
     ensure_dir(results_dir)
@@ -190,7 +180,6 @@ def run_numerical_ik_benchmark(data_dir, results_dir, n_samples=500):
 
 
 def compile_all_metrics(results_dir):
-    """Compile all iteration metrics and numerical baseline into one file."""
     results_dir = Path(results_dir)
     all_metrics = {"iterations": [], "numerical_baseline": None}
 

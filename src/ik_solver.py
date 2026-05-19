@@ -1,6 +1,3 @@
-"""
-Production IK Solver wrapper -- clean API for the web app.
-"""
 import time
 import numpy as np
 import torch
@@ -14,16 +11,8 @@ from src.utils import Normalizer, load_context_log
 
 
 class IKSolver:
-    """Neural Network Inverse Kinematics Solver."""
 
     def __init__(self, model_path=None, iteration=None):
-        """
-        Initialize the solver.
-
-        Args:
-            model_path: path to .pth model file. If None, auto-detect best.
-            iteration: which architecture iteration. If None, auto-detect.
-        """
         self.project_root = Path(__file__).parent.parent
         self.robot = RobotModel()
         self.device = torch.device('cpu')
@@ -33,6 +22,8 @@ class IKSolver:
             best = ctx.get("best_model", {})
             if iteration is None:
                 iteration = best.get("iteration", 1)
+                if iteration == 0:
+                    iteration = 1
             if model_path is None:
                 model_path = self.project_root / f"models/best_model_iter{iteration}.pth"
 
@@ -50,15 +41,6 @@ class IKSolver:
         print(f"IK Solver ready (iteration {iteration})")
 
     def solve(self, target_pose):
-        """
-        Solve IK for a single target pose.
-
-        Args:
-            target_pose: [x, y, z, roll, pitch, yaw] (meters, radians)
-
-        Returns:
-            dict with joint_angles, position_error_mm, inference_time_ms
-        """
         target_pose = np.asarray(target_pose, dtype=np.float32)
 
         pose_norm = self.normalizer.normalize_input(target_pose.reshape(1, -1))
@@ -98,20 +80,10 @@ class IKSolver:
         }
 
     def solve_trajectory(self, waypoints):
-        """
-        Solve IK for a sequence of waypoints.
-
-        Args:
-            waypoints: (N, 6) array of target poses
-
-        Returns:
-            list of result dicts
-        """
         results = []
         for wp in waypoints:
             results.append(self.solve(wp))
         return results
 
     def get_arm_positions(self, joint_angles):
-        """Get 3D link positions for visualization."""
         return self.robot.get_link_positions(joint_angles).tolist()
